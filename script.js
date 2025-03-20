@@ -173,7 +173,6 @@ function MPTable(x, y, w, P){
     this.j = -1;
 
     this.colorBords = function (b){
-        console.log("coloriage de " + b)
         this.P.reset_color();
         for (let k = 1; k <= b; k++){
             this.P.set_color(k, 'green');
@@ -213,13 +212,16 @@ function MPTable(x, y, w, P){
             }
             return;
         }
+
         this.indices.reset_color();
         this.indices.set_color(this.i + 1, 'grey');
+
         while(this.j > 0 && this.P.get(this.i) != this.P.get(this.j)){
             this.j = this.mp.get(this.j);
         }
         this.j++;
         this.mp.set(this.i + 1, this.j);
+
         this.P.reset_color();
         this.P.set_color(this.j, 'green');
         if (this.i == this.m){
