@@ -14,9 +14,25 @@
     <div class="row-cols-auto" id="control" class="d-flex">
         <button type="button" onclick="next_step()" class="btn btn-outline-primary">Next</button>
         <button type="button" onclick="reset_alg()" class="btn btn-outline-primary">Reset</button>
+        <button type="button" onclick="auto()" class="btn btn-outline-primary">Auto</button>
+        <div class="btn-group">
+            <button type="button" class="btn btn-outline-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+              Algorithme
+            </button>
+            <ul class="dropdown-menu">
+              <li><button class="dropdown-item" onclick="setAlgo('naive')">Naif</button></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><button class="dropdown-item" onclick="setAlgo('mp')">Morris-Pratt (MP)</button></li>
+              <li><button class="dropdown-item" onclick="setAlgo('kmp')">Knuth-Morris-Pratt (KMP)</button></li>
+            </ul>
+          </div>
+          
     </div>
     <div class="row" id="display"></div>
 
+    <script src="graphics.js"></script>
+    <script src="naive.js"></script>
+    <script src="mp.js"></script>
     <script src="script.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 </body>
