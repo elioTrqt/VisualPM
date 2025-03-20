@@ -1,5 +1,5 @@
 var pattern = new GraphicList(100, 200, 50);
-pattern.set_pattern("abacaba".split(""));
+pattern.set_pattern("abababa".split(""));
 
 var text = new GraphicList(100, 100, 50);
 text.set_pattern("ababacabacabaccbabbabacababbabacaba".split(""));
@@ -17,6 +17,9 @@ function setAlgo(a){
     }
     else if(a == 'kmp'){
         current_alg = new MPSearch(pattern, text, true);
+    }
+    else if(a == 'bm'){
+        current_alg = new BMSearch(pattern, text);
     }
 }
 

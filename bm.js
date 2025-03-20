@@ -1,6 +1,6 @@
-function Bord(I, B, P){
+function Suff(I, Suff, P){
     this.I = I;
-    this.B = B;
+    this.Suff = Suff;
     this.P = P;
 
     this.m = this.P.content.length;
@@ -9,21 +9,29 @@ function Bord(I, B, P){
     this.i = 0;
     
     this.process = function (){
-        this.values[0] = -1;
-        for (let i=1; i<=this.m; i++){
-            let j = this.values[i-1];
-            while (j>=0 && this.P.get(i) != this.P.get(j+1)){
-                j = this.values[j];
+        this.values[this.m] = this.m;
+        let g = this.m;
+        let f;
+        for (let i = this.m - 1; i >= 1; i--){
+            if (i > g && this.values[i+this.m-f] != i - g){
+                this.values[i] = Math.min(this.values[i+this.m-f], i - g);
             }
-            this.values[i] = j + 1;
+            else {
+                f = i;
+                g = Math.min(g, i);
+                while (g > 0 && this.P.get(g) == this.P.get(g+this.m-f)){
+                    g = g-1;
+                }
+                this.values[i] = f-g;
+            }
         }
     }
     this.process();
 
-    this.colorBords = function (i){
+    this.colorSuff = function (i){
         this.P.reset_color();
-        for (let k = 1; k <= this.values[i]; k++){
-            this.P.set_color(k, 'green');
+        for(let k=0; k < this.values[i]; k++){
+            this.P.set_color(i-k, 'green');
         }
     }
 
@@ -36,8 +44,8 @@ function Bord(I, B, P){
         else {
             this.I.reset_color();
             this.i++;
-            this.B.set(this.i, this.values[this.i]);
-            this.colorBords(this.i);
+            this.Suff.set(this.i, this.values[this.i]);
+            this.colorSuff(this.i);
             this.I.set_color(this.i, 'grey');
             if (this.i == this.m){
                 this.done = true;
@@ -56,7 +64,7 @@ function Bord(I, B, P){
     this.reset = function(){
         this.I.reset();
         this.P.reset();
-        this.B.empty();
+        this.Suff.empty();
         this.i = 0;
         this.done = false;
     }
@@ -66,34 +74,48 @@ function Bord(I, B, P){
     }
 }
 
-function MPNext(I, MP_tab, P, k){
+function Dec(I, D, P, Suff){
     this.I = I;
-    this.MP_tab = MP_tab;
+    this.D = D;
+    this.Suff = Suff;
     this.P = P;
-    this.k = k;
 
     this.m = this.P.content.length;
-    this.values = Array(this.m + 2);
+    this.values = Array(this.m + 1);
+    this.value_from = Array(this.m + 1);
+    this.value_case = Array(this.m + 1);
     this.done = false;
     this.i = 0;
-
+    
     this.process = function (){
-        this.values[1] = 0;
-        let j = 0;
-        for (let i = 1; i <= this.m; i++){
-            while (j > 0 && this.P.get(i) != this.P.get(j)){
-                j = this.values[j];
+        for (let j=1; j <= this.m; j++){
+            this.values[j] = this.m;
+        }
+        let i = 1;
+        for (let j = this.m-1; j >= 0; j--){
+            if (j==0 || this.Suff.get(j) == j){
+                while (i <= this.m-j){
+                    this.value_from[i] = j;
+                    this.value_case[i] = 'case2';
+                    this.values[i] = this.m - j;
+                    i++;
+                }
             }
-            j++;
-            if (!this.k || this.i == this.m || this.P.get(i+1) != this.P.get(j)){
-                this.values[i + 1] = j;
-            }
-            else {
-                this.values[i + 1] = this.values[j];
-            }
+        }
+        for (let j=1; j <= this.m - 1; j++){
+            this.value_from[this.m - this.Suff.get(j)] = j;
+            this.value_case[this.m - this.Suff.get(j)] = 'case1';
+            this.values[this.m - this.Suff.get(j)] = this.m - j;
         }
     }
     this.process();
+
+    this.colorDec = function (i){
+        this.P.reset_color();
+        let j = this.value_from[i];
+        this.Suff.colorSuff(j);
+        console.log(this.value_case[i]);
+    }
 
     this.next = function(){
         if (this.done){
@@ -104,11 +126,10 @@ function MPNext(I, MP_tab, P, k){
         else {
             this.I.reset_color();
             this.i++;
-            this.MP_tab.set(this.i, this.values[this.i]);
-            this.P.reset_color();
-            this.P.set_color(this.values[this.i], 'green');
+            this.D.set(this.i, this.values[this.i]);
+            this.colorDec(this.i);
             this.I.set_color(this.i, 'grey');
-            if (this.i == this.m + 1){
+            if (this.i == this.m){
                 this.done = true;
             }
             return true;
@@ -125,66 +146,63 @@ function MPNext(I, MP_tab, P, k){
     this.reset = function(){
         this.I.reset();
         this.P.reset();
-        this.MP_tab.empty();
+        this.D.empty();
         this.i = 0;
-        this.j = 0;
         this.done = false;
     }
 
-    this.get = function(i){
+    this.get = function (i) {
         return this.values[i];
     }
 }
 
-function MPTable(x, y, w, pattern, k){
+
+function SuffTable(x, y, w, pattern){
     this.x = x;
     this.y = y;
     this.width = w;
-    this.k = k;
 
     this.current_x = x;
     this.current_y = y;
 
-    this.state = 'bord';
+    this.state = 'suff';
     this.done = false;
 
-    this.I = new GraphicList(this.x, this.y, this.width, Array.from({ length: pattern.length + 1 }, (_, index) => index+1));
+    this.I = new GraphicList(this.x, this.y, this.width, Array.from({ length: pattern.length }, (_, index) => index+1));
     this.P = new GraphicList(this.x, this.y + this.width, this.width, pattern);
 
-    this.B_tab = new GraphicList(this.x, this.y + 2 * this.width, this.width, Array(pattern.length).fill(""));
-    this.B = new Bord(this.I, this.B_tab, this.P);
+    this.Suff_tab = new GraphicList(this.x, this.y + 2 * this.width, this.width, Array(pattern.length).fill(""));
+    this.Suff = new Suff(this.I, this.Suff_tab, this.P);
 
-    this.MP_tab = new GraphicList(this.x, this.y + 3 * this.width, this.width, Array(pattern.length + 1).fill(""));
-    this.MP = new MPNext(this.I, this.MP_tab, this.P, this.k);
+    this.Dec_tab = new GraphicList(this.x, this.y + 3 * this.width, this.width, Array(pattern.length).fill(""));
+    this.D = new Dec(this.I, this.Dec_tab, this.P, this.Suff);
 
     this.next = function(){
-        if (this.state == 'bord'){
-            if (this.B.done){
-                this.state = 'mp';
+        if (this.state == 'suff'){
+            if (this.Suff.done){
+                this.state = 'dec';
             }
-            this.B.next();
+            this.Suff.next();
         }
-        else if (this.state == 'mp'){
-            if (this.MP.done){
+        else if (this.state == 'dec'){
+            if (this.D.done){
                 this.state = 'done';
-                this.done = true;
             }
-            this.MP.next();
+            this.D.next();
         }
     }
 
     this.fill = function(){
-        this.B.fill();
-        this.MP.fill();
+        this.Suff.fill();
         this.done = true;
     }
 
     this.reset = function(){
         this.I.reset();
         this.P.reset();
-        this.B.reset();
-        this.MP.reset();
-        this.state = 'bord';
+        this.Suff.reset();
+        this.D.reset();
+        this.state = 'suff';
         this.done = false;
     }
 
@@ -195,26 +213,26 @@ function MPTable(x, y, w, pattern, k){
     this.clean = function (){
         this.I.clean();
         this.P.clean();
-        this.B_tab.clean();
-        this.MP_tab.clean();
+        this.Suff_tab.clean();
+        this.Dec_tab.clean();
     }
 }
 
 
-function MPSearch(P, T, k){
+function BMSearch(P, T){
     this.P = P;
     this.T = T;
     this.m = this.P.content.length;
     this.n = this.T.content.length;
-    this.MPNext = new MPTable(100, 300, 50, this.P.content, k);
+    this.SuffTable = new SuffTable(100, 300, 50, this.P.content);
 
     this.state = 'check';
     this.i = 1;
     this.j = 1;
 
     this.next = function () {
-        if (!this.MPNext.done){
-            this.MPNext.next();
+        if (!this.SuffTable.done){
+            this.SuffTable.next();
         }
         else {
             this.nextSearch();
@@ -270,13 +288,13 @@ function MPSearch(P, T, k){
     }
 
     this.fill_table = function (){
-        this.MPNext.fill();
+        this.SuffTable.fill();
     }
 
     this.reset = function (){
         this.P.reset();
         this.T.reset();
-        this.MPNext.reset();
+        this.SuffTable.reset();
         this.i = 1;
         this.j = 1;
         this.state = 'check';
@@ -284,6 +302,6 @@ function MPSearch(P, T, k){
 
     this.clean = function (){
         this.reset();
-        this.MPNext.clean();
+        this.SuffTable.clean();
     }
 }
