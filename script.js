@@ -148,7 +148,7 @@ function RechercheNaive(P, T){
     }
 }
 
-function MPTable(x, y, w, P){
+function MPTable(x, y, w, pattern){
     this.x = x;
     this.y = y;
     this.width = w;
@@ -161,10 +161,10 @@ function MPTable(x, y, w, P){
     this.bord = new GraphicList(x, y+2*w, w);
     this.mp = new GraphicList(x, y+3*w, w);
 
-    this.indices.init(Array.from({ length: P.length + 1 }, (_, index) => index+1));
-    this.P.init(P.concat([""]));
-    this.bord.init(Array(P.length + 1).fill(""));
-    this.mp.init(Array(P.length + 1).fill(""));
+    this.indices.init(Array.from({ length: pattern.length + 1 }, (_, index) => index+1));
+    this.P.init(pattern.concat([""]));
+    this.bord.init(Array(pattern.length + 1).fill(""));
+    this.mp.init(Array(pattern.length + 1).fill(""));
 
     this.m = this.P.content.length - 1;
     this.state = 'bord';
@@ -248,6 +248,72 @@ function MPTable(x, y, w, P){
             this.i++;
         }
     }
+
+    this.get = function (i) {
+        return this.mp.get(i);
+    }
+}
+
+
+function MPSearch(P, T, table){
+    this.P = P;
+    this.T = T;
+    this.m = this.P.content.length;
+    this.n = this.T.content.length;
+    this.MP = table;
+
+    this.table_done = false;
+    this.state = 'check';
+    this.i = 1;
+    this.j = 1;
+
+    this.nextSearch = function (){
+        if (this.state == 'check'){
+            if (this.P.get(this.i) != this.T.get(this.j)){
+                this.P.set_color(this.i, 'red');
+                this.T.set_color(this.j, 'red');
+                this.state = 'move';
+            } else {
+                this.P.set_color(this.i, 'green');
+                this.T.set_color(this.j, 'green');
+                this.i++;
+                this.j++;
+                if (this.i == this.m + 1){
+                    console.log(`TROUVÉ : Occurence à la position ${this.j - this.i + 1}`);
+                    this.state = 'move';
+                }
+                if (this.j > this.n){
+                    console.log('FINI');
+                    this.state = 'done';
+                }
+            }
+        }
+        else if (this.state == 'move'){
+            for (let i = this.MP.get(this.i); i <= this.m; i++){
+                this.P.set_color(i, 'white');
+                this.T.set_color(this.j-i, 'white');
+            }
+            this.T.set_color(this.j, 'white');
+            this.P.shift(this.i - this.MP.get(this.i));
+            this.i = this.MP.get(this.i);
+            this.state = 'check';
+            if (this.i == 0){
+                this.i++;
+                this.j++;
+                if (this.j > this.n){
+                    console.log('FINI');
+                    this.state = 'done';
+                }
+            }
+        }
+    }
+
+    this.computeTable = function () {
+        while(this.MP.state != 'done'){
+            this.MP.next();
+        }
+        this.MP.next();
+    }
 }
 
 
@@ -255,13 +321,15 @@ var pattern = new GraphicList(100, 200, 50);
 pattern.init("abacaba".split(""));
 
 var text = new GraphicList(100, 100, 50);
-text.init("ababbab".split(""));
+text.init("ababacabacbabbabacababbabacaba".split(""));
 
 var rn = new RechercheNaive(pattern, text);
 var mp = new MPTable(100, 300, 50, pattern.content);
+var mps = new MPSearch(pattern, text, mp);
+mps.computeTable();
 
 function next_step(){
-    rn.next();
+    mps.nextSearch();
 }
 
 function reset_alg(){
