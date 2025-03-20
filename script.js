@@ -1,14 +1,14 @@
 var pattern = new GraphicList(100, 200, 50);
-pattern.init("abacaba".split(""));
+pattern.set_pattern("abacaba".split(""));
 
 var text = new GraphicList(100, 100, 50);
-text.init("ababacabacabaccbabbabacababbabacaba".split(""));
+text.set_pattern("ababacabacabaccbabbabacababbabacaba".split(""));
 
 var current_alg = new RechercheNaive(pattern, text);
 
 function setAlgo(a){
     console.log(a);
-    current_alg.destroy();
+    current_alg.clean();
     if(a == 'naive'){
         current_alg = new RechercheNaive(pattern, text);
     }
@@ -25,7 +25,7 @@ function next_step(){
 }
 
 function auto(){
-    current_alg.fill();
+    current_alg.fill_table();
 }
 
 function reset_alg(){

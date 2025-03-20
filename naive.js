@@ -21,6 +21,7 @@ function RechercheNaive(P, T){
                         console.log('FINI');
                         this.state = 'done';
                     } else {
+                        this.P.set_arrow(1, 2, 'blue');
                         this.state = 'move';
                     }
                 }
@@ -28,7 +29,7 @@ function RechercheNaive(P, T){
             else {
                 this.P.set_color(this.i, 'red');
                 this.T.set_color(this.pos + this.i - 1, 'red');
-                this.P.set_arrow(1, 2);
+                this.P.set_arrow(1, 2, 'blue');
                 if (this.pos + 1 > this.n - this.m + 1){
                     console.log('FINI');
                     this.state = 'done';
@@ -47,18 +48,18 @@ function RechercheNaive(P, T){
         }
     }
 
+    this.fill_table = function (){
+    }
+
     this.reset = function (){
-        this.P.reset_color();
-        this.T.reset_color();
-        this.P.move_to(this.P.x, this.P.y);
-        
+        this.P.reset();
+        this.T.reset();
         this.pos = 1;
         this.i = 1;
-    
         this.state = 'check';
     }
 
-    this.destroy = function(){
+    this.clean = function(){
         this.reset();
     }
 }

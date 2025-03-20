@@ -7,8 +7,8 @@ const svg = d3.select('#display')
 const speed = 1;
 
 
-function GraphicList(x, y, w){
-    this.content = [];
+function GraphicList(x, y, w, pattern=[]){
+    this.content = pattern;
     this.arrow = svg.append('g');
     this.group = svg.append('g');
     this.x = x;
@@ -18,13 +18,13 @@ function GraphicList(x, y, w){
     this.current_x = x;
     this.current_y = y;
 
-    this.init = function (T) {
+    this.set_pattern = function (T) {
         this.group.selectAll("*").remove();
         this.content = T;
-        let current_x = this.x;
+        let x = this.x;
         for (let i=0; i < this.content.length; i++){
             this.group.append('rect')
-                .attr('x', current_x)
+                .attr('x', x)
                 .attr('y', this.y)
                 .attr('width', this.width) 
                 .attr('height', this.width)
@@ -33,7 +33,7 @@ function GraphicList(x, y, w){
                 .attr('id', `cell_${i}`);
 
             this.group.append("text")
-                .attr("x", current_x + 24)
+                .attr("x", x + 24)
                 .attr("y", this.y + 27.5)
                 .attr("text-anchor", "middle")
                 .attr("dominant-baseline", "middle") 
@@ -42,9 +42,32 @@ function GraphicList(x, y, w){
                 .text(this.content[i])
                 .attr('id', `text_${i}`);
             
-            current_x += this.width;
+            x += this.width;
         }
     };
+
+    this.set_pattern(pattern);
+
+    this.empty = function (){
+        this.reset_color();
+        this.set_pattern(Array(this.content.length).fill(""));
+    }
+
+    this.set = function (i, value){
+        if (i-1 < this.content.length){
+            this.group.select(`#text_${i-1}`).text(value);
+            this.content[i-1] = value;
+        }
+    }
+
+    this.get = function (i){
+        if (i-1 < this.content.length){
+            return this.content[i-1];
+        }
+        else{
+            return null;
+        }
+    }
 
     this.move_to = function (x_to, y_to){ 
         this.group.transition()
@@ -57,13 +80,10 @@ function GraphicList(x, y, w){
     this.shift = function (d){
         this.arrow.selectAll("*").remove();
         const dest = this.current_x + d * this.width;
-        this.group.transition()
-            .duration(x / speed)
-            .attr("transform", `translate(${dest - this.x}, ${this.current_y - this.y})`);
-        this.current_x = dest;
+        this.move_to(dest, this.current_y);
     }
 
-    this.set_arrow = function (from, to) {
+    this.set_arrow = function (from, to, color) {
         this.arrow.selectAll("*").remove();
 
         const len = this.width * (to - from);
@@ -76,7 +96,7 @@ function GraphicList(x, y, w){
             .attr("y1", y1 - 0.5 * this.width)
             .attr("x2", x1 + 1.5)
             .attr("y2", y1)
-            .attr("stroke", "red")
+            .attr("stroke", color)
             .attr("stroke-width", 3);
 
         this.arrow.append("line")
@@ -84,14 +104,14 @@ function GraphicList(x, y, w){
             .attr("y1", y1)
             .attr("x2", x2)
             .attr("y2", y1)
-            .attr("stroke", "red")
+            .attr("stroke", color)
             .attr("stroke-width", 3);
 
         this.arrow.append("path")
             .attr("d", `M${x1 + len - 25}, ${y1 - 25 / 2}
                         L${x1 + len}, ${y1}
                         L${x1 + len - 25}, ${y1 + 25 / 2}`)
-            .attr("fill", "red");
+            .attr("fill", color);
     }
 
     this.reset_arrow = function (){
@@ -108,21 +128,13 @@ function GraphicList(x, y, w){
         }
     }
 
-    this.clear = function (){
+    this.reset = function(){
         this.reset_color();
-        this.init(Array(this.content.length).fill(""));
+        this.reset_arrow();
+        this.move_to(this.x, this.y);
     }
 
-    this.set = function (i, value){
-        this.group.select(`#text_${i-1}`).text(value);
-        this.content[i-1] = value;
-    }
-
-    this.get = function (i){
-        return this.content[i-1];
-    }
-
-    this.destroy = function (){
+    this.clean = function (){
         this.group.remove();
         this.arrow.remove();
     }

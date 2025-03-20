@@ -47,9 +47,9 @@ function Bord(I, B, P){
     }
 
     this.reset = function(){
-        this.I.reset_color();
-        this.P.reset_color();
-        this.B.clear();
+        this.I.reset();
+        this.P.reset();
+        this.B.empty();
         this.i = 1;
         this.j = -1;
         this.done = false;
@@ -129,9 +129,9 @@ function MPNext(I, MP_tab, P, k){
     }
 
     this.reset = function(){
-        this.I.reset_color();
-        this.P.reset_color();
-        this.MP_tab.clear();
+        this.I.reset();
+        this.P.reset();
+        this.MP_tab.empty();
         this.i = 0;
         this.j = 0;
         this.done = false;
@@ -154,18 +154,13 @@ function MPTable(x, y, w, pattern, k){
     this.state = 'bord';
     this.done = false;
 
-    this.I = new GraphicList(this.x, this.y, this.width);
-    this.I.init(Array.from({ length: pattern.length + 1 }, (_, index) => index+1));
+    this.I = new GraphicList(this.x, this.y, this.width, Array.from({ length: pattern.length + 1 }, (_, index) => index+1));
+    this.P = new GraphicList(this.x, this.y + this.width, this.width, pattern);
 
-    this.P = new GraphicList(this.x, this.y + this.width, this.width);
-    this.P.init(pattern);
-
-    this.B_tab = new GraphicList(this.x, this.y + 2 * this.width, this.width);
-    this.B_tab.init(Array(pattern.length).fill("")); 
+    this.B_tab = new GraphicList(this.x, this.y + 2 * this.width, this.width, Array(pattern.length).fill(""));
     this.B = new Bord(this.I, this.B_tab, this.P);
 
-    this.MP_tab = new GraphicList(this.x, this.y + 3 * this.width, this.width);
-    this.MP_tab.init(Array(pattern.length + 1).fill("")); 
+    this.MP_tab = new GraphicList(this.x, this.y + 3 * this.width, this.width, Array(pattern.length + 1).fill(""));
     this.MP = new MPNext(this.I, this.MP_tab, this.P, this.k);
 
     this.next = function(){
@@ -191,6 +186,8 @@ function MPTable(x, y, w, pattern, k){
     }
 
     this.reset = function(){
+        this.I.reset();
+        this.P.reset();
         this.B.reset();
         this.MP.reset();
         this.state = 'bord';
@@ -214,11 +211,11 @@ function MPTable(x, y, w, pattern, k){
         this.MP_tab.reset_color();
     }
 
-    this.destroy = function (){
-        this.I.destroy();
-        this.P.destroy();
-        this.B_tab.destroy();
-        this.MP_tab.destroy();
+    this.clean = function (){
+        this.I.clean();
+        this.P.clean();
+        this.B_tab.clean();
+        this.MP_tab.clean();
     }
 }
 
@@ -248,8 +245,9 @@ function MPSearch(P, T, k){
             if (this.P.get(this.i) != this.T.get(this.j)){
                 this.P.set_color(this.i, 'red');
                 this.T.set_color(this.j, 'red');
-                this.P.set_arrow(this.MPNext.get(this.i), this.i);
-                this.MPNext.color_col(this.i, 'red');
+                this.P.set_arrow(this.MPNext.get(this.i), this.i, 'blue');
+                this.MPNext.MP_tab.set_color(this.i, 'blue');
+                //this.MPNext.color_col(this.i, 'red');
                 this.state = 'move';
             } else {
                 this.P.set_color(this.i, 'green');
@@ -258,8 +256,8 @@ function MPSearch(P, T, k){
                 this.j++;
                 if (this.i == this.m + 1){
                     console.log(`TROUVÉ : Occurence à la position ${this.j - this.i + 1}`);
-                    this.P.set_arrow(this.MPNext.get(this.i), this.i);
-                    this.MPNext.color_col(this.i, 'red');
+                    this.P.set_arrow(this.MPNext.get(this.i), this.i, 'blue');
+                    this.MPNext.MP_tab.set_color(this.i, 'blue');
                     this.state = 'move';
                 }
                 if (this.j > this.n){
@@ -291,18 +289,21 @@ function MPSearch(P, T, k){
         }
     }
 
+    this.fill_table = function (){
+        this.MPNext.fill();
+    }
+
     this.reset = function (){
-        this.P.reset_color();
-        this.T.reset_color();
+        this.P.reset();
+        this.T.reset();
         this.MPNext.reset();
-        this.P.move_to(this.P.x, this.P.y);
         this.i = 1;
         this.j = 1;
         this.state = 'check';
     }
 
-    this.destroy = function (){
+    this.clean = function (){
         this.reset();
-        this.MPNext.destroy();
+        this.MPNext.clean();
     }
 }
