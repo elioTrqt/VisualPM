@@ -1,5 +1,5 @@
 var pattern = new GraphicList(100, 200, 50);
-pattern.set_pattern("abababa".split(""));
+pattern.set_pattern("abacaba".split(""));
 
 var text = new GraphicList(100, 100, 50);
 text.set_pattern("ababacabacabaccbabbabacababbabacaba".split(""));

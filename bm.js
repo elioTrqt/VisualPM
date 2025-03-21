@@ -4,7 +4,7 @@ function Suff(I, Suff, P){
     this.P = P;
 
     this.m = this.P.content.length;
-    this.values = Array(this.m + 1);
+    this.values = new Array(this.m + 1);
     this.done = false;
     this.i = 0;
     
@@ -81,9 +81,9 @@ function Dec(I, D, P, Suff){
     this.P = P;
 
     this.m = this.P.content.length;
-    this.values = Array(this.m + 1);
-    this.value_from = Array(this.m + 1);
-    this.value_case = Array(this.m + 1);
+    this.values = new Array(this.m + 1);
+    this.value_from = new Array(this.m + 1);
+    this.value_case = new Array(this.m + 1);
     this.done = false;
     this.i = 0;
     
@@ -114,7 +114,6 @@ function Dec(I, D, P, Suff){
         this.P.reset_color();
         let j = this.value_from[i];
         this.Suff.colorSuff(j);
-        console.log(this.value_case[i]);
     }
 
     this.next = function(){
@@ -187,6 +186,7 @@ function SuffTable(x, y, w, pattern){
         else if (this.state == 'dec'){
             if (this.D.done){
                 this.state = 'done';
+                this.done = true;
             }
             this.D.next();
         }
@@ -194,6 +194,7 @@ function SuffTable(x, y, w, pattern){
 
     this.fill = function(){
         this.Suff.fill();
+        this.D.fill();
         this.done = true;
     }
 
@@ -207,7 +208,7 @@ function SuffTable(x, y, w, pattern){
     }
 
     this.get = function(i) {
-        return this.MP.get(i);
+        return this.D.get(i);
     }
 
     this.clean = function (){
@@ -225,14 +226,34 @@ function BMSearch(P, T){
     this.m = this.P.content.length;
     this.n = this.T.content.length;
     this.SuffTable = new SuffTable(100, 300, 50, this.P.content);
+    this.MvsTable = new MvsTable(300 + this.P.content.length * 50, 300, 50, this.P.content);
 
     this.state = 'check';
-    this.i = 1;
-    this.j = 1;
+    this.pos = 1;
+    this.i = this.m;
+
+    this.colorSuff = function (i, p){
+        this.P.reset_color();
+        this.T.reset_color();
+        for(let k=0; k < this.SuffTable.Suff.get(i); k++){
+            this.P.set_color(i-k, 'green');
+            this.T.set_color(p + k, 'green');
+        }
+    }
+
+    this.colorDec = function (i, p){
+        this.P.reset_color();
+        this.T.reset_color();
+        this.P.set_color(i, 'green');
+        this.T.set_color(p, 'green');
+    }
 
     this.next = function () {
         if (!this.SuffTable.done){
             this.SuffTable.next();
+        }
+        else if (!this.MvsTable.done){
+            this.MvsTable.next();
         }
         else {
             this.nextSearch();
@@ -241,54 +262,61 @@ function BMSearch(P, T){
 
     this.nextSearch = function (){
         if (this.state == 'check'){
-            if (this.P.get(this.i) != this.T.get(this.j)){
-                this.P.set_color(this.i, 'red');
-                this.T.set_color(this.j, 'red');
-                this.P.set_arrow(this.MPNext.get(this.i), this.i, 'blue');
-                this.MPNext.MP_tab.set_color(this.i, 'blue');
-                this.state = 'move';
-            } else {
+            if (this.i == this.m){
+                this.P.reset_color();
+                this.T.reset_color();
+            }
+            if(this.P.get(this.i) == this.T.get(this.pos + this.i - 1)){
                 this.P.set_color(this.i, 'green');
-                this.T.set_color(this.j, 'green');
-                this.i++;
-                this.j++;
-                if (this.i == this.m + 1){
-                    console.log(`TROUVÉ : Occurence à la position ${this.j - this.i + 1}`);
-                    this.P.set_arrow(this.MPNext.get(this.i), this.i, 'blue');
-                    this.MPNext.MP_tab.set_color(this.i, 'blue');
+                this.T.set_color(this.pos + this.i - 1, 'green');
+                this.i--;
+                if (this.i == 0){
+                    console.log(`TROUVÉ : Occurence à la position ${this.pos}`);
                     this.state = 'move';
                 }
-                if (this.j > this.n){
-                    console.log('FINI');
-                    this.state = 'done';
-                    this.MPNext.MP_tab.reset_color();
-                    this.P.reset_arrow();
-                }
+            }
+            else {
+                this.P.set_color(this.i, 'red');
+                this.T.set_color(this.pos + this.i - 1, 'red');
+                let d_suff = this.SuffTable.get(this.i);
+                let d_r = Math.max(1, this.i - this.MvsTable.get(this.T.get(this.pos + this.i - 1)));
+                console.log(`Suff propose ${d_suff} et R propose ${d_r}`);
+                this.state = 'move';
             }
         }
         else if (this.state == 'move'){
-            this.MPNext.MP_tab.reset_color();
-            for (let i = this.MPNext.get(this.i); i <= this.m; i++){
-                this.P.set_color(i, 'white');
-                this.T.set_color(this.j-i, 'white');
-            }
-            this.T.set_color(this.j, 'white');
-            this.P.shift(this.i - this.MPNext.get(this.i));
-            this.i = this.MPNext.get(this.i);
-            this.state = 'check';
             if (this.i == 0){
-                this.i++;
-                this.j++;
-                if (this.j > this.n){
-                    console.log('FINI');
-                    this.state = 'done';
+                let d_suff = this.SuffTable.get(1);
+                this.pos += d_suff;
+                this.colorSuff(this.m - d_suff, this.pos);
+                this.P.shift(d_suff);
+            }
+            else {
+                let d_suff = this.SuffTable.get(this.i);
+                let d_r = Math.max(1, this.i - this.MvsTable.get(this.T.get(this.pos + this.i - 1)));
+                this.P.shift(Math.max(d_suff, d_r));
+                if (d_suff >= d_r){
+                    this.colorSuff(this.m - d_suff, this.pos + this.m - 1);
                 }
+                else {
+                    this.colorDec(this.i - d_r, this.pos + this.m - 1);
+                }
+                this.pos += Math.max(d_suff, d_r);
+            }
+            this.i = this.m;
+            if (this.pos <= this.n - this.m + 1){
+                this.state = 'check';
+            }
+            else {
+                console.log("Done");
+                this.state = 'done';
             }
         }
     }
 
     this.fill_table = function (){
         this.SuffTable.fill();
+        this.MvsTable.fill();
     }
 
     this.reset = function (){

@@ -2,7 +2,7 @@
 const svg = d3.select('#display')
 .append('svg')
 .attr('width', 2000)
-.attr('height', 500);
+.attr('height', 800);
 
 const speed = 1;
 
