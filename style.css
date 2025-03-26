@@ -1,0 +1,9 @@
+#display {
+    max-width: 100%;
+    width: 100%;
+}
+
+.dyn-menu-btn {
+    margin-left: 10px;
+    margin-right: 10px;
+}

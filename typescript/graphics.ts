@@ -56,6 +56,10 @@ class Graphic {
     clear(): void {
         this.group.selectAll("*").remove();
     }
+
+    remove(): void {
+        this.group.remove();
+    }
 }
 
 
@@ -142,8 +146,83 @@ class GraphicList extends Graphic {
     }
 }
 
-interface DynamicList {
-    step: number;
+
+class Arrow extends Graphic{
+    line: D3selec<SVGLineElement>;
+    //marker: d3.Selection<SVGMarkerElement, unknown, null, undefined>;
+    start: Vector;
+    end: Vector;
+    start_trans: Vector;
+    end_trans: Vector;
+  
+    constructor(parent: D3selec<SVGGraphicsElement>, start: Vector, end: Vector, color: string) {
+        super(parent, start);
+        this.start = start;
+        this.end = end;
+        this.start_trans = new Vector(0, 0);
+        this.end_trans = new Vector(0, 0);
+        
+        // Define the marker for the arrowhead
+        this.group
+            .append("defs")
+            .append("marker")
+            .attr("id", "arrowhead")
+            .attr("viewBox", "0 0 10 10")
+            .attr("refX", 8)
+            .attr("refY", 5)
+            .attr("markerWidth", 6)
+            .attr("markerHeight", 6)
+            .attr("orient", "auto-start-reverse")
+            .append("path")
+            .attr("d", "M 0 0 L 10 5 L 0 10 z")
+            .attr("fill", color)
+            .attr("stroke", color);
+    
+        // Create the line representing the arrow
+        this.line = this.group
+            .append("line")
+            .attr("stroke", color)
+            .attr("stroke-width", 2)
+            .attr("x1", this.start.x)
+            .attr("x2", this.end.x)
+            .attr("y1", this.start.y)
+            .attr("y2", this.end.y)
+            .attr("marker-end", "url(#arrowhead)");
+    }
+
+    translate_start(t: Vector, speed: number = 0): void {
+        this.start = this.start.add(t);
+        this.update(speed * t.len());
+    }
+
+    translate_end(t: Vector, speed: number = 0): void {
+        this.end = this.end.add(t);
+        this.update(speed * t.len());
+    }
+;
+    set_start(t: Vector, speed: number = 0): void {
+        const duration = speed * this.start.sub(t).len();
+        this.start = t;
+        this.update(duration);
+    }
+
+    set_end(t: Vector, speed: number = 0): void {
+        const duration = speed * this.end.sub(t).len();
+        this.end = t;
+        this.update(duration);
+    } 
+
+    update(duration: number): void {
+        this.line.transition()
+            .duration(duration)
+            .attr("x1", this.start.x) 
+            .attr("y1", this.start.y)
+            .attr("x2", this.end.x) 
+            .attr("y2", this.end.y);
+    }
+}
+
+interface Dynamic extends Graphic {
     done: boolean;
 
     next(): void;
@@ -151,7 +230,66 @@ interface DynamicList {
     reset(): void;
 }
 
-class BordList extends GraphicList implements DynamicList {
+
+class DynamicSection {
+    container: HTMLDivElement;
+    menu: HTMLDivElement;
+    content: Dynamic;
+
+    constructor(container: HTMLDivElement, content: Dynamic, title: string){
+        this.content = content;
+        this.container = container;
+
+        this.menu = document.createElement('div');
+        this.menu.style.padding = '10px';
+        this.menu.classList.add('row-cols-auto');
+        this.menu.style.paddingLeft = `${this.content.get_pos().x}px`;
+        this.menu.style.paddingBottom = '20px';
+        this.container.insertBefore(this.menu, this.container.firstChild);
+
+        if (title != ""){
+            const head = document.createElement('h3');
+            head.innerHTML = title;
+            head.style.paddingLeft = `${this.content.get_pos().x}px`;
+            head.style.paddingBottom = '10px';
+            this.container.insertBefore(head, this.container.firstChild);
+        }
+        
+        this.build_menu();
+    }
+
+    build_menu(): void {
+        const next_button = document.createElement('button');
+        next_button.innerHTML = 'Next';
+        next_button.classList.add('btn');
+        next_button.classList.add('btn-outline-primary');
+        next_button.classList.add('dyn-menu-btn');
+        next_button.type = 'button';
+        next_button.addEventListener('click', this.content.next.bind(this.content));
+        this.menu.appendChild(next_button);
+
+        const skip_button = document.createElement('button');
+        skip_button.innerHTML = 'Skip';
+        skip_button.classList.add('btn');
+        skip_button.classList.add('btn-outline-primary');
+        skip_button.classList.add('dyn-menu-btn');
+        skip_button.type = 'button';
+        skip_button.addEventListener('click', this.content.skip.bind(this.content));
+        this.menu.appendChild(skip_button);
+
+        const reset_button = document.createElement('button');
+        reset_button.innerHTML = 'Reset';
+        reset_button.classList.add('btn');
+        reset_button.classList.add('btn-outline-primary');
+        reset_button.classList.add('dyn-menu-btn');
+        reset_button.type = 'button';
+        reset_button.addEventListener('click', this.content.reset.bind(this.content));
+        this.menu.appendChild(reset_button);
+    }
+}
+
+
+class BordList extends GraphicList implements Dynamic {
     step: number;
     done: boolean;
     data: Array<number>;
@@ -207,7 +345,7 @@ class BordList extends GraphicList implements DynamicList {
     }
 }
 
-class MPList extends GraphicList implements DynamicList {
+class MPList extends GraphicList implements Dynamic {
     step: number;
     done: boolean;
     data: Array<number>;
@@ -350,7 +488,7 @@ class MPTable extends Graphic {
 }
 
 
-class SuffList extends GraphicList implements DynamicList {
+class SuffList extends GraphicList implements Dynamic {
     step: number;
     done: boolean;
     data: Array<number>;
@@ -415,7 +553,7 @@ class SuffList extends GraphicList implements DynamicList {
     }
 }
 
-class DList extends GraphicList implements DynamicList {
+class DList extends GraphicList implements Dynamic {
     step: number;
     done: boolean;
     data: Array<number>;
@@ -689,12 +827,109 @@ class RTable extends Graphic {
 }
 
 
+
+class SlidingWindow extends Graphic {
+    text: GraphicList;
+    pattern: GraphicList;
+    arrow?: Arrow;
+
+    constructor(parent: D3selec<SVGGraphicsElement>, pos: Vector, w: number, text: string, pattern: string) {
+        super(parent, pos);
+        this.text = new GraphicList(this.group, pos, w, text.split(""));
+        this.pattern = new GraphicList(this.group, pos.add(new Vector(0, 2*w)), w, pattern.split(""));
+    }
+
+    equals(i: number, j: number): boolean {
+        if (this.pattern.get(i) == this.text.get(j)){
+            this.pattern.set_color(i, 'green');
+            this.text.set_color(j, 'green');
+            this.display_shift(i, j, 'green');
+            return true;
+        } else {
+            this.pattern.set_color(i, 'red');
+            this.text.set_color(j, 'red');
+            this.display_shift(i, j, 'red');
+            return false;
+        }
+    }
+
+    shift(i: number): void {
+        this.pattern.shift(i);
+        this.arrow?.translate_start(new Vector(i*this.pattern.cell_width, 0), 1);
+    }
+
+    display_shift(from: number, to: number, color: string = 'black'): void {
+        this.arrow?.remove();
+        const start = new Vector(this.pattern.get_pos().x + (from - 0.5) * this.pattern.cell_width, this.pattern.get_pos().y);
+        const end = new Vector(this.text.get_pos().x + (to - 0.5) * this.text.cell_width, this.text.get_pos().y + this.text.cell_width);
+        this.arrow = new Arrow(this.group, start, end, color);
+    }
+}
+
+
+/*
+const tables_div = document.createElement('div');
+tables_div.classList.add('row');
+document.getElementById('display')?.appendChild(tables_div);
+
+// MP
+const mp_div = document.createElement('div');
+mp_div.classList.add('col-md-12');
+mp_div.classList.add('col-lg-6');
+mp_div.style.overflowX = 'auto';
+
+const mp_svg = d3.select(mp_div)
+    .append('svg')
+    .attr('width', 2000)
+    .attr('height', 800)
+    .append('g');
+const mp_table = new MPTable(mp_svg, new Vector(150, 0), 50, "abacaba", false);
+const mp_section = new DynamicSection(mp_div, mp_table, "Table MP");
+
+// D
+const d_div = document.createElement('div');
+d_div.classList.add('col-md-12');
+d_div.classList.add('col-lg-6');
+d_div.style.overflowX = 'auto';
+
+const d_svg = d3.select(d_div)
+    .append('svg')
+    .attr('width', 2000)
+    .attr('height', 800)
+    .append('g');
+const d_table = new DTable(d_svg, new Vector(150, 0), 50, "abacaba");
+const d_section = new DynamicSection(d_div, d_table, "Table D");
+
+// D
+const r_div = document.createElement('div');
+r_div.classList.add('col-md-12');
+r_div.classList.add('col-lg-6');
+r_div.style.overflowX = 'auto';
+
+const r_svg = d3.select(r_div)
+    .append('svg')
+    .attr('width', 2000)
+    .attr('height', 800)
+    .append('g');
+const r_table = new RTable(r_svg, new Vector(100, 0), 50, "abacaba", false);
+const r_section = new DynamicSection(r_div, r_table, "Mauvais caractère");
+
+
+// Add to display
+//tables_div.appendChild(mp_div);
+tables_div.appendChild(r_div);
+tables_div.appendChild(d_div);
+
+
+//const l = new DTable(svg, new Vector(200, 100), 50, "abacaba");
+//const l = new RTable(svg, new Vector(200, 100), 50, "abacaba", true);
+*/
+
 const svg = d3.select('#display')
 .append('svg')
 .attr('width', 2000)
-.attr('height', 800).append('g');
+.attr('height', 800)
+.append('g');
 
-
-const l = new MPTable(svg, new Vector(200, 100), 50, "abacaba", false);
-//const l = new DTable(svg, new Vector(200, 100), 50, "abacaba");
-//const l = new RTable(svg, new Vector(200, 100), 50, "abacaba", true);
+//const a = new Arrow(svg, new Vector(100, 100), new Vector(200, 200), 'red');
+const s = new SlidingWindow(svg, new Vector(100, 100), 50, "ABBABABBBABBBABAAABABABAACABACABABABABBA", "ABACABA");
