@@ -243,14 +243,14 @@ class DynamicSection {
         this.menu = document.createElement('div');
         this.menu.style.padding = '10px';
         this.menu.classList.add('row-cols-auto');
-        this.menu.style.paddingLeft = `${this.content.get_pos().x}px`;
+        this.menu.style.paddingLeft = `${this.content.get_pos().x + 100}px`;
         this.menu.style.paddingBottom = '20px';
         this.container.insertBefore(this.menu, this.container.firstChild);
 
         if (title != ""){
             const head = document.createElement('h3');
             head.innerHTML = title;
-            head.style.paddingLeft = `${this.content.get_pos().x}px`;
+            head.style.paddingLeft = `${this.content.get_pos().x + 100}px`;
             head.style.paddingBottom = '10px';
             this.container.insertBefore(head, this.container.firstChild);
         }
@@ -417,32 +417,33 @@ class MPTable extends Graphic {
 
     constructor(parent: D3selec<SVGGraphicsElement>, pos: Vector, w: number, pattern: string, knuth: boolean = false){
         super(parent, pos);
-        this.index = new GraphicList(this.group, pos, w, Array.from({ length: pattern.length + 1}, (_, index) => index + 1));
-        this.pattern = new GraphicList(this.group, pos.add(new Vector(0, w)), w, pattern.split(""));
-        this.bord = new BordList(this.group, pos.add(new Vector(0, 2*w)), w, this.pattern, this.index);
-        this.mp = new MPList(this.group, pos.add(new Vector(0, 3*w)), w, this.pattern, this.index, knuth);
+        const offset_pos = pos.add(new Vector(100, 0));
+        this.index = new GraphicList(this.group, offset_pos, w, Array.from({ length: pattern.length + 1}, (_, index) => index + 1));
+        this.pattern = new GraphicList(this.group, offset_pos.add(new Vector(0, w)), w, pattern.split(""));
+        this.bord = new BordList(this.group, offset_pos.add(new Vector(0, 2*w)), w, this.pattern, this.index);
+        this.mp = new MPList(this.group, offset_pos.add(new Vector(0, 3*w)), w, this.pattern, this.index, knuth);
         this.done = false;
 
 
         this.group.append('text')
-            .attr('x', pos.x - 10)
-            .attr('y', pos.y + 0.5*w)
+            .attr('x', offset_pos.x - 10)
+            .attr('y', offset_pos.y + 0.5*w)
             .attr("font-size", "20px")
             .attr('text-anchor', 'end')
             .attr('dominant-baseline', 'middle')
             .text('i');
 
         this.group.append('text')
-            .attr('x', pos.x - 10)
-            .attr('y', pos.y + 1.5*w)
+            .attr('x', offset_pos.x - 10)
+            .attr('y', offset_pos.y + 1.5*w)
             .attr("font-size", "20px")
             .attr('text-anchor', 'end')
             .attr('dominant-baseline', 'middle')
             .text('P[ i ]');
 
         this.group.append('text')
-            .attr('x', pos.x - 10)
-            .attr('y', pos.y + 2.5*w)
+            .attr('x', offset_pos.x - 10)
+            .attr('y', offset_pos.y + 2.5*w)
             .attr("font-size", "20px")
             .attr('text-anchor', 'end')
             .attr('dominant-baseline', 'middle')
@@ -450,8 +451,8 @@ class MPTable extends Graphic {
 
 
         this.group.append('text')
-            .attr('x', pos.x - 10)
-            .attr('y', pos.y + 3.5*w)
+            .attr('x', offset_pos.x - 10)
+            .attr('y', offset_pos.y + 3.5*w)
             .attr("font-size", "20px")
             .attr('text-anchor', 'end')
             .attr('dominant-baseline', 'middle')
@@ -635,32 +636,33 @@ class DTable extends Graphic {
 
     constructor(parent: D3selec<SVGGraphicsElement>, pos: Vector, w: number, pattern: string){
         super(parent, pos);
-        this.index = new GraphicList(this.group, pos, w, Array.from({ length: pattern.length}, (_, index) => index + 1));
-        this.pattern = new GraphicList(this.group, pos.add(new Vector(0, w)), w, pattern.split(""));
-        this.suff = new SuffList(this.group, pos.add(new Vector(0, 2*w)), w, this.pattern, this.index);
-        this.d = new DList(this.group, pos.add(new Vector(0, 3*w)), w, this.pattern, this.index, this.suff);
+        const offset_pos = pos.add(new Vector(100, 0));
+        this.index = new GraphicList(this.group, offset_pos, w, Array.from({ length: pattern.length}, (_, index) => index + 1));
+        this.pattern = new GraphicList(this.group, offset_pos.add(new Vector(0, w)), w, pattern.split(""));
+        this.suff = new SuffList(this.group, offset_pos.add(new Vector(0, 2*w)), w, this.pattern, this.index);
+        this.d = new DList(this.group, offset_pos.add(new Vector(0, 3*w)), w, this.pattern, this.index, this.suff);
         this.done = false;
 
 
         this.group.append('text')
-            .attr('x', pos.x - 10)
-            .attr('y', pos.y + 0.5*w)
+            .attr('x', offset_pos.x - 10)
+            .attr('y', offset_pos.y + 0.5*w)
             .attr("font-size", "20px")
             .attr('text-anchor', 'end')
             .attr('dominant-baseline', 'middle')
             .text('i');
 
         this.group.append('text')
-            .attr('x', pos.x - 10)
-            .attr('y', pos.y + 1.5*w)
+            .attr('x', offset_pos.x - 10)
+            .attr('y', offset_pos.y + 1.5*w)
             .attr("font-size", "20px")
             .attr('text-anchor', 'end')
             .attr('dominant-baseline', 'middle')
             .text('P[ i ]');
 
         this.group.append('text')
-            .attr('x', pos.x - 10)
-            .attr('y', pos.y + 2.5*w)
+            .attr('x', offset_pos.x - 10)
+            .attr('y', offset_pos.y + 2.5*w)
             .attr("font-size", "20px")
             .attr('text-anchor', 'end')
             .attr('dominant-baseline', 'middle')
@@ -668,8 +670,8 @@ class DTable extends Graphic {
 
 
         this.group.append('text')
-            .attr('x', pos.x - 10)
-            .attr('y', pos.y + 3.5*w)
+            .attr('x', offset_pos.x - 10)
+            .attr('y', offset_pos.y + 3.5*w)
             .attr("font-size", "20px")
             .attr('text-anchor', 'end')
             .attr('dominant-baseline', 'middle')
@@ -703,6 +705,10 @@ class DTable extends Graphic {
         this.suff.reset();
         this.d.reset();
     }
+
+    static get_canvas_size(pattern: string): Vector {
+        return new Vector(150 + pattern.length * 50, 250);
+    }
 }
 
 
@@ -718,8 +724,9 @@ class RTable extends Graphic {
 
     constructor(parent: D3selec<SVGGraphicsElement>, pos: Vector, w: number, pattern: string, improved: boolean = false){
         super(parent, pos);
-        this.index = new GraphicList(this.group, pos, w, Array.from({ length: pattern.length}, (_, index) => index + 1));
-        this.pattern = new GraphicList(this.group, pos.add(new Vector(0, w)), w, pattern.split(""));
+        const offset_pos = pos.add(new Vector(100, 0));
+        this.index = new GraphicList(this.group, offset_pos, w, Array.from({ length: pattern.length}, (_, index) => index + 1));
+        this.pattern = new GraphicList(this.group, offset_pos.add(new Vector(0, w)), w, pattern.split(""));
         this.improved = improved;
         this.symbs = new Map<string, GraphicList>;
         this.values = new Map<string, GraphicList>;
@@ -727,46 +734,46 @@ class RTable extends Graphic {
         this.step = 0;
         this.done = false;
 
-        let y_offset = 4*w;
+        let y_offset = 3.5*w;
         for (let i=0; i < pattern.length; i++){
             if (!this.data.has(pattern[i])){
                 this.data.set(pattern[i], [0]);
-                this.symbs.set(pattern[i], new GraphicList(this.group, pos.add(new Vector(0, y_offset)), w, [pattern[i]]));
-                this.values.set(pattern[i], new GraphicList(this.group, pos.add(new Vector(1.5*w, y_offset)), w, [0]));
+                this.symbs.set(pattern[i], new GraphicList(this.group, offset_pos.add(new Vector(0, y_offset)), w, [pattern[i]]));
+                this.values.set(pattern[i], new GraphicList(this.group, offset_pos.add(new Vector(1.5*w, y_offset)), w, [0]));
                 y_offset += w;
             }
         }
         this.data.set('...', [0]);
-        this.symbs.set('...' , new GraphicList(this.group, pos.add(new Vector(0, y_offset)), w, ['...']));
-        this.values.set('...' , new GraphicList(this.group, pos.add(new Vector(1.5*w, y_offset)), w, [0]));
+        this.symbs.set('...' , new GraphicList(this.group, offset_pos.add(new Vector(0, y_offset)), w, ['...']));
+        this.values.set('...' , new GraphicList(this.group, offset_pos.add(new Vector(1.5*w, y_offset)), w, [0]));
 
         this.group.append('text')
-            .attr('x', pos.x - 10)
-            .attr('y', pos.y + 0.5*w)
+            .attr('x', offset_pos.x - 10)
+            .attr('y', offset_pos.y + 0.5*w)
             .attr("font-size", "20px")
             .attr('text-anchor', 'end')
             .attr('dominant-baseline', 'middle')
             .text('i');
 
         this.group.append('text')
-            .attr('x', pos.x - 10)
-            .attr('y', pos.y + 1.5*w)
+            .attr('x', offset_pos.x - 10)
+            .attr('y', offset_pos.y + 1.5*w)
             .attr("font-size", "20px")
             .attr('text-anchor', 'end')
             .attr('dominant-baseline', 'middle')
             .text('P[ i ]');
 
         this.group.append('text')
-            .attr('x', pos.x + 0.5 * w)
-            .attr('y', pos.y + 3.7*w)
+            .attr('x', offset_pos.x + 0.5 * w)
+            .attr('y', offset_pos.y + 3.2*w)
             .attr("font-size", "20px")
             .attr('text-anchor', 'middle')
             .attr('dominant-baseline', 'bottom')
             .text('a');
 
         this.group.append('text')
-            .attr('x', pos.x + 2 * w)
-            .attr('y', pos.y + 3.7*w)
+            .attr('x', offset_pos.x + 2 * w)
+            .attr('y', offset_pos.y + 3.2*w)
             .attr("font-size", "20px")
             .attr('text-anchor', improved ? 'left' : 'middle')
             .attr('dominant-baseline', 'bottom')
@@ -824,6 +831,28 @@ class RTable extends Graphic {
             this.values.get(c)?.fill_color('white');
         }
     }
+
+    static get_canvas_size(pattern: string, improved: boolean, width: number): Vector {
+        const chars = ['...'];
+        const freqs = new Map;
+        freqs.set('...', 1);
+        for (let char of pattern) {
+            if(!chars.includes(char)){
+                chars.push(char);
+                freqs.set(char, 2);
+            }
+            freqs.set(char, freqs.get(char) + 1);
+        }
+        let maxFreq = 1;
+        for (let c of chars){
+            maxFreq = freqs.get(c) > maxFreq ? freqs.get(c) : maxFreq;
+        }
+        
+        const x = Math.max(width * pattern.length, 0.5*width + maxFreq * width) + 150;
+        const y = 3.5*width + chars.length * width + 50;
+
+        return new Vector(x, y);
+    }
 }
 
 
@@ -864,72 +893,80 @@ class SlidingWindow extends Graphic {
         const end = new Vector(this.text.get_pos().x + (to - 0.5) * this.text.cell_width, this.text.get_pos().y + this.text.cell_width);
         this.arrow = new Arrow(this.group, start, end, color);
     }
+
+    reset(): void {
+        this.arrow?.remove();
+        this.pattern.reset_pos();
+    }
 }
 
 
-/*
-const tables_div = document.createElement('div');
-tables_div.classList.add('row');
-document.getElementById('display')?.appendChild(tables_div);
+class AlgBM {
+    d_table: DTable;
+    r_table: RTable;
+    sw: SlidingWindow;
+    container: HTMLElement;
 
-// MP
-const mp_div = document.createElement('div');
-mp_div.classList.add('col-md-12');
-mp_div.classList.add('col-lg-6');
-mp_div.style.overflowX = 'auto';
+    constructor(container: HTMLElement, pattern: string, text: string, improved: boolean){
+        this.container = container;
 
-const mp_svg = d3.select(mp_div)
-    .append('svg')
-    .attr('width', 2000)
-    .attr('height', 800)
-    .append('g');
-const mp_table = new MPTable(mp_svg, new Vector(150, 0), 50, "abacaba", false);
-const mp_section = new DynamicSection(mp_div, mp_table, "Table MP");
+        // Sliding window
+        const sw_div = document.createElement('div');
+        sw_div.classList.add('row-cols-auto');
+        sw_div.style.margin = '20px';
+        sw_div.style.overflowX = 'auto';
+        this.container.appendChild(sw_div);
 
-// D
-const d_div = document.createElement('div');
-d_div.classList.add('col-md-12');
-d_div.classList.add('col-lg-6');
-d_div.style.overflowX = 'auto';
+        const sw_svg = d3.select(sw_div).append('svg')
+            .attr('width', 50*(text.length + 1))
+            .attr('height', 200)
+            .append('g');
+        this.sw = new SlidingWindow(sw_svg, new Vector(25, 25), 50, text, pattern);
 
-const d_svg = d3.select(d_div)
-    .append('svg')
-    .attr('width', 2000)
-    .attr('height', 800)
-    .append('g');
-const d_table = new DTable(d_svg, new Vector(150, 0), 50, "abacaba");
-const d_section = new DynamicSection(d_div, d_table, "Table D");
+        // Rule
+        const hr = document.createElement('hr');
+        this.container.appendChild(hr);
+        
+        // Tables
+        const tables_div = document.createElement('div');
+        tables_div.classList.add('row');
+        this.container.appendChild(tables_div);
 
-// D
-const r_div = document.createElement('div');
-r_div.classList.add('col-md-12');
-r_div.classList.add('col-lg-6');
-r_div.style.overflowX = 'auto';
+        // D Table
+        const d_div = document.createElement('div');
+        d_div.classList.add('col-auto');
+        d_div.style.overflowX = 'auto';
+        d_div.style.marginRight = '20px';
+        d_div.style.marginTop = '20px';
+        tables_div.appendChild(d_div);
 
-const r_svg = d3.select(r_div)
-    .append('svg')
-    .attr('width', 2000)
-    .attr('height', 800)
-    .append('g');
-const r_table = new RTable(r_svg, new Vector(100, 0), 50, "abacaba", false);
-const r_section = new DynamicSection(r_div, r_table, "Mauvais caractère");
+        const d_canvas_size = DTable.get_canvas_size(pattern);
+        const d_svg = d3.select(d_div)
+            .append('svg')
+            .attr('width', d_canvas_size.x)
+            .attr('height', d_canvas_size.y)
+            .append('g');
+        this.d_table = new DTable(d_svg, new Vector(25, 25), 50, pattern);
+        const d_section = new DynamicSection(d_div, this.d_table, "Bon suffixe (table D)");
 
+        // R Table
+        const r_div = document.createElement('div');
+        r_div.classList.add('col-auto');
+        r_div.style.overflowX = 'auto';
+        r_div.style.marginRight = '20px';
+        r_div.style.marginTop = '20px';
+        tables_div.appendChild(r_div);
 
-// Add to display
-//tables_div.appendChild(mp_div);
-tables_div.appendChild(r_div);
-tables_div.appendChild(d_div);
+        const r_canvas_size = RTable.get_canvas_size(pattern, improved, 50);
+        const r_svg = d3.select(r_div)
+            .append('svg')
+            .attr('width', r_canvas_size.x)
+            .attr('height', r_canvas_size.y)
+            .append('g');
+        this.r_table = new RTable(r_svg, new Vector(25, 25), 50, pattern, improved);
+        const r_section = new DynamicSection(r_div, this.r_table, "Mauvais caractère (table R)");
+        
+    }
+}
 
-
-//const l = new DTable(svg, new Vector(200, 100), 50, "abacaba");
-//const l = new RTable(svg, new Vector(200, 100), 50, "abacaba", true);
-*/
-
-const svg = d3.select('#display')
-.append('svg')
-.attr('width', 2000)
-.attr('height', 800)
-.append('g');
-
-//const a = new Arrow(svg, new Vector(100, 100), new Vector(200, 200), 'red');
-const s = new SlidingWindow(svg, new Vector(100, 100), 50, "ABBABABBBABBBABAAABABABAACABACABABABABBA", "ABACABA");
+const alg = new AlgBM(document.getElementById('display')!, 'abcdefg', 'abbbabaaccabacabbabacabaab', true);
