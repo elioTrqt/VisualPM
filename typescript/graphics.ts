@@ -222,7 +222,7 @@ class Arrow extends Graphic{
     }
 }
 
-interface Dynamic extends Graphic {
+interface Dynamic {
     done: boolean;
 
     next(): void;
@@ -232,25 +232,25 @@ interface Dynamic extends Graphic {
 
 
 class DynamicSection {
-    container: HTMLDivElement;
+    container: HTMLElement;
     menu: HTMLDivElement;
     content: Dynamic;
 
-    constructor(container: HTMLDivElement, content: Dynamic, title: string){
+    constructor(container: HTMLElement, content: Dynamic, title: string){
         this.content = content;
         this.container = container;
 
         this.menu = document.createElement('div');
         this.menu.style.padding = '10px';
         this.menu.classList.add('row-cols-auto');
-        this.menu.style.paddingLeft = `${this.content.get_pos().x + 100}px`;
+        this.menu.style.paddingLeft = `125px`;
         this.menu.style.paddingBottom = '20px';
         this.container.insertBefore(this.menu, this.container.firstChild);
 
         if (title != ""){
             const head = document.createElement('h3');
             head.innerHTML = title;
-            head.style.paddingLeft = `${this.content.get_pos().x + 100}px`;
+            head.style.paddingLeft = `125px`;
             head.style.paddingBottom = '10px';
             this.container.insertBefore(head, this.container.firstChild);
         }
@@ -692,6 +692,7 @@ class DTable extends Graphic {
         }
         else if (!this.d.done){
             this.d.next();
+            this.done = this.d.done;
         }
     }
 
@@ -869,17 +870,24 @@ class RTable extends Graphic {
         return new Vector(x, y);
     }
 
-    get_shift(c: string, i: number): number {
+    get_shift(c: string, i: number, color: string = 'white'): number {
         if (!this.data.has(c)){
+            this.symbs.get('...')!.set_color(1, color);
+            this.values.get('...')!.set_color(1, color);
             return i;
         }
         if (!this.improved){
+            this.symbs.get(c)!.set_color(1, color);
+            this.values.get(c)!.set_color(1, color);
             return Math.max(1, i - this.data.get(c)![0]);
         } else {
+            this.symbs.get(c)!.set_color(1, color);
             let rightest = 0;
-            for (let r of this.data.get(c)!){
-                if (r >= i) break;
-                rightest = r;
+            for (let r=0; r < this.data.get(c)!.length; r++){
+                if (this.data.get(c)![r] >= i) break;
+                this.values.get(c)!.fill_color('white');
+                this.values.get(c)!.set_color(r, color, 0);
+                rightest = this.data.get(c)![r];
             }
             return i - rightest;
         }
@@ -928,11 +936,13 @@ class SlidingWindow extends Graphic {
     reset(): void {
         this.arrow?.remove();
         this.pattern.reset_pos();
+        this.pattern.fill_color('white');
+        this.text.fill_color('white');
     }
 }
 
 
-class AlgBM {
+class AlgBM implements Dynamic {
     d_table: DTable;
     r_table: RTable;
     sw: SlidingWindow;
@@ -941,7 +951,7 @@ class AlgBM {
     m: number;
     n: number;
     i: number;
-    pos = 1;
+    p = 1;
     done = false;
     state = 'check';
 
@@ -954,7 +964,7 @@ class AlgBM {
         // Sliding window
         const sw_div = document.createElement('div');
         sw_div.classList.add('row-cols-auto');
-        sw_div.style.margin = '20px';
+        sw_div.style.paddingLeft = '100px';
         sw_div.style.overflowX = 'auto';
         this.container.appendChild(sw_div);
 
@@ -1015,7 +1025,7 @@ class AlgBM {
         else if (!this.r_table.done){
             this.r_table.next();
         }
-        else {
+        else if (!this.done) {
             this.nextSearch();
         }
     }
@@ -1025,50 +1035,82 @@ class AlgBM {
             if (this.i == this.m){
                 this.sw.pattern.fill_color('white');
                 this.sw.text.fill_color('white');
+                this.d_table.d.fill_color('white');
+                this.d_table.index.fill_color('white');
+                this.r_table.reset_color();
             }
-            if (this.sw.equals(this.i, this.pos + this.i - 1)){
+            if (this.sw.equals(this.i, this.p + this.i - 1)){
                 this.i--;
                 if (this.i == 0){
-                    console.log(`TROUVÉ : Occurence à la position ${this.pos}`);
+                    console.log(`TROUVÉ : Occurence à la position ${this.p}`);
                     this.state = 'move';
-                    this.sw.display_shift(this.i, this.pos + this.i - 1 + this.d_table.get_shift(1));
+                    this.sw.display_shift(this.i, this.p + this.i - 1 + this.d_table.get_shift(1));
+                    this.d_table.d.set_color(1, 'blue');
+                    this.d_table.index.set_color(1, 'blue');
                 }
             }
             else {
                 const shift_d = this.d_table.get_shift(this.i);
-                const shift_r = this.r_table.get_shift(`${this.sw.text.get(this.pos + this.i - 1)}`, this.i);
+                this.d_table.d.set_color(this.i, 'blue');
+                this.d_table.index.set_color(this.i, 'blue');
+                const shift_r = this.r_table.get_shift(`${this.sw.text.get(this.p + this.i - 1)}`, this.i, 'blue');
                 console.log(`shift by suff : ${shift_d}; shift by mvs : ${shift_r};`);
                 this.state = 'move';
-                this.sw.display_shift(this.i, this.pos + this.i - 1 + Math.max(shift_d, shift_r), 'blue');
+                this.sw.display_shift(this.i, this.p + this.i - 1 + Math.max(shift_d, shift_r), 'blue');
             }
         }
         else if (this.state == 'move'){
             if (this.i == 0){
                 const shift_d = this.d_table.get_shift(1)!;
-                this.pos += shift_d;
-                this.colorShiftD(this.i, this.pos);
+                this.p += shift_d;
+                this.colorShiftD(this.i, this.p);
                 this.sw.shift(shift_d);
             }
             else {
                 const shift_d = this.d_table.get_shift(this.i);
-                const shift_r = this.r_table.get_shift(`${this.sw.text.get(this.pos + this.i - 1)}`, this.i);
+                const shift_r = this.r_table.get_shift(`${this.sw.text.get(this.p + this.i - 1)}`, this.i, 'blue');
                 this.sw.shift(Math.max(shift_d, shift_r));
                 if (shift_d >= shift_r){
-                    this.colorShiftD(this.i, this.pos);
+                    this.colorShiftD(this.i, this.p);
+                    this.r_table.reset_color();
                 } else {
-                    this.colorShiftR(this.i - shift_r, this.pos + this.m - 1);
+                    this.colorShiftR(this.i - shift_r, this.p + this.m - 1);
+                    this.d_table.d.fill_color('white');
+                    this.d_table.index.fill_color('white');
                 }
-                this.pos += Math.max(shift_d, shift_r);
+                this.p += Math.max(shift_d, shift_r);
             }
             this.i = this.m;
-            if (this.pos <= this.n - this.m + 1){
+            if (this.p <= this.n - this.m + 1){
                 this.state = 'check';
             } else {
                 this.state = 'done';
                 console.log('DONE');
+                this.done = true;
             }
 
         }
+    }
+
+    skip(): void {
+        while (!this.done) {
+            this.next();
+        }
+    }
+
+    reset(): void {
+        this.d_table.reset();
+        this.r_table.reset();
+        this.sw.reset();
+
+        this.i = this.m;
+        this.p = 1;
+        this.done = false;
+        this.state = 'check';
+
+        this.d_table.d.fill_color('white');
+        this.d_table.index.fill_color('white');
+        this.r_table.reset_color();
     }
 
     colorShiftR(i: number, p: number): void {
@@ -1091,4 +1133,10 @@ class AlgBM {
     }
 }
 
-const alg = new AlgBM(document.getElementById('display')!, 'xabacaba', 'abbbabaaccabacabbabacabaab', true);
+const display_div = document.getElementById('display')!;
+//const alg_div = document.createElement('div');
+//alg_div.style.maxWidth = '100%';
+//alg_div.style.width = '100%';
+//display_div.appendChil
+const alg = new AlgBM(display_div, 'xabacaba', 'abbbabaaccabacabbabacabaab', true);
+const dyn_alg = new DynamicSection(display_div, alg, "Boyer Moore");
