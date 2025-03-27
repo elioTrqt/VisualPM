@@ -552,6 +552,10 @@ class SuffList extends GraphicList implements Dynamic {
         this.step = 0;
         this.done = false;
     }
+
+    get(i: number): number{
+        return this.data[i];
+    }
 }
 
 class DList extends GraphicList implements Dynamic {
@@ -624,6 +628,10 @@ class DList extends GraphicList implements Dynamic {
         this.step = 0;
         this.done = false;
     }
+
+    get(i: number): number{
+        return this.data[i];
+    }
 }
 
 
@@ -693,17 +701,24 @@ class DTable extends Graphic {
         }
         else if (!this.d.done){
             this.d.skip();
+            this.done = true;
         }
     }
 
     skip(): void {
         this.suff.skip();
         this.d.skip();
+        this.done = true;
     }
 
     reset(): void {
         this.suff.reset();
         this.d.reset();
+        this.done = false;
+    }
+
+    get_shift(i: number): number {
+        return this.d.get(i);
     }
 
     static get_canvas_size(pattern: string): Vector {
@@ -853,6 +868,22 @@ class RTable extends Graphic {
 
         return new Vector(x, y);
     }
+
+    get_shift(c: string, i: number): number {
+        if (!this.data.has(c)){
+            return i;
+        }
+        if (!this.improved){
+            return Math.max(1, i - this.data.get(c)![0]);
+        } else {
+            let rightest = 0;
+            for (let r of this.data.get(c)!){
+                if (r >= i) break;
+                rightest = r;
+            }
+            return i - rightest;
+        }
+    }
 }
 
 
@@ -907,8 +938,18 @@ class AlgBM {
     sw: SlidingWindow;
     container: HTMLElement;
 
+    m: number;
+    n: number;
+    i: number;
+    pos = 1;
+    done = false;
+    state = 'check';
+
     constructor(container: HTMLElement, pattern: string, text: string, improved: boolean){
         this.container = container;
+        this.m = pattern.length;
+        this.n = text.length;
+        this.i = this.m;
 
         // Sliding window
         const sw_div = document.createElement('div');
@@ -918,7 +959,7 @@ class AlgBM {
         this.container.appendChild(sw_div);
 
         const sw_svg = d3.select(sw_div).append('svg')
-            .attr('width', 50*(text.length + 1))
+            .attr('width', 50*(text.length + pattern.length) + 50)
             .attr('height', 200)
             .append('g');
         this.sw = new SlidingWindow(sw_svg, new Vector(25, 25), 50, text, pattern);
@@ -965,8 +1006,89 @@ class AlgBM {
             .append('g');
         this.r_table = new RTable(r_svg, new Vector(25, 25), 50, pattern, improved);
         const r_section = new DynamicSection(r_div, this.r_table, "Mauvais caractère (table R)");
-        
+    }
+
+    next(): void {
+        if (!this.d_table.done){
+            this.d_table.next();
+        }
+        else if (!this.r_table.done){
+            this.r_table.next();
+        }
+        else {
+            this.nextSearch();
+        }
+    }
+
+    nextSearch(): void {
+        if (this.state == 'check'){
+            if (this.i == this.m){
+                this.sw.pattern.fill_color('white');
+                this.sw.text.fill_color('white');
+            }
+            if (this.sw.equals(this.i, this.pos + this.i - 1)){
+                this.i--;
+                if (this.i == 0){
+                    console.log(`TROUVÉ : Occurence à la position ${this.pos}`);
+                    this.state = 'move';
+                    this.sw.display_shift(this.i, this.pos + this.i - 1 + this.d_table.get_shift(1));
+                }
+            }
+            else {
+                const shift_d = this.d_table.get_shift(this.i);
+                const shift_r = this.r_table.get_shift(`${this.sw.text.get(this.pos + this.i - 1)}`, this.i);
+                console.log(`shift by suff : ${shift_d}; shift by mvs : ${shift_r};`);
+                this.state = 'move';
+                this.sw.display_shift(this.i, this.pos + this.i - 1 + Math.max(shift_d, shift_r), 'blue');
+            }
+        }
+        else if (this.state == 'move'){
+            if (this.i == 0){
+                const shift_d = this.d_table.get_shift(1)!;
+                this.pos += shift_d;
+                this.colorShiftD(this.i, this.pos);
+                this.sw.shift(shift_d);
+            }
+            else {
+                const shift_d = this.d_table.get_shift(this.i);
+                const shift_r = this.r_table.get_shift(`${this.sw.text.get(this.pos + this.i - 1)}`, this.i);
+                this.sw.shift(Math.max(shift_d, shift_r));
+                if (shift_d >= shift_r){
+                    this.colorShiftD(this.i, this.pos);
+                } else {
+                    this.colorShiftR(this.i - shift_r, this.pos + this.m - 1);
+                }
+                this.pos += Math.max(shift_d, shift_r);
+            }
+            this.i = this.m;
+            if (this.pos <= this.n - this.m + 1){
+                this.state = 'check';
+            } else {
+                this.state = 'done';
+                console.log('DONE');
+            }
+
+        }
+    }
+
+    colorShiftR(i: number, p: number): void {
+        this.sw.pattern.fill_color('white');
+        this.sw.text.fill_color('white');
+        this.sw.pattern.set_color(i, 'green');
+        this.sw.text.set_color(p, 'green');
+    }
+
+    colorShiftD(i: number, p: number): void {
+        this.sw.pattern.fill_color('white');
+        this.sw.text.fill_color('white');
+        const shift = this.d_table.get_shift(this.i);
+        let end = this.m - shift;
+        let begin = end - this.d_table.suff.get(end) + 1;
+        for (let k = begin; k <= end; k++){
+            this.sw.pattern.set_color(k, 'green');
+            this.sw.text.set_color(p + shift + k - 1, 'green');
+        }
     }
 }
 
-const alg = new AlgBM(document.getElementById('display')!, 'abcdefg', 'abbbabaaccabacabbabacabaab', true);
+const alg = new AlgBM(document.getElementById('display')!, 'xabacaba', 'abbbabaaccabacabbabacabaab', true);
