@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "es2022", 
+    "module": "es2022", 
+    "outDir": "../script", 
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "lib": ["es2016", "dom"],
+    "strict": true,
+    "allowJs": true,
+    "checkJs": false
+  }
+}
