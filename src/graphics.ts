@@ -1,37 +1,59 @@
 // @ts-ignore
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
-import { Vector } from "./vector.js";
 
 export type D3selec<T extends SVGGraphicsElement> = d3.Selection<T, unknown, null | HTMLElement, undefined>;
 
+export class Vector {
+    x: number;
+    y: number;
+
+    constructor(x: number, y: number) {
+        this.x = x;
+        this.y = y;
+    }
+
+    add(other: Vector): Vector {
+        return new Vector(this.x + other.x, this.y + other.y);
+    }
+    sub(other: Vector): Vector {
+        return new Vector(this.x - other.x, this.y - other.y);
+    }
+
+    len(): number {
+        return Math.sqrt(Math.pow(this.x, 2) + Math.pow(this.x, 2));
+    }
+};
+
 export class Graphic {
+    readonly group: D3selec<SVGGElement>;     // Root
     readonly pos: Vector;   // initial postion
     trans: Vector;          // translation
-    readonly group: D3selec<SVGGElement>;     // Root
+    speed: number;
 
-    constructor(parent: D3selec<SVGGraphicsElement>, pos: Vector){
+    constructor(parent: D3selec<SVGGraphicsElement>, pos: Vector, anim_speed: number){
         this.pos = pos;
         this.trans = new Vector(0, 0);
         this.group = parent.append("g");
+        this.speed = anim_speed;
     }
 
     get_pos(): Vector {
         return this.pos.add(this.trans);
     }
 
-    set_pos(dest: Vector): void {
+    set_pos(dest: Vector, anim?: number): void {
         let t : Vector = dest.sub(this.get_pos());
-        this.translate(t);
+        this.translate(t, anim?anim:this.speed);
     }
 
     reset_pos(): void {
         this.set_pos(this.pos);
     }
 
-    translate(t: Vector, speed: number = 0): void {
+    translate(t: Vector, anim?: number): void {
         this.trans = this.trans.add(t);
         this.group.transition()
-            .duration(speed * t.len())
+            .duration(anim?anim:this.speed * t.len())
             .attr("transform", `translate(${this.trans.x}, ${this.trans.y})`);
     }
 
@@ -42,17 +64,21 @@ export class Graphic {
     remove(): void {
         this.group.remove();
     }
+
+    set_speed(s: number){
+        this.speed = s;
+    }
 }
 
 
 export class GraphicList extends Graphic {
     values: Array<string | number | null>;
     cell_width: number;
-    anim_speed = 1;
 
-    constructor(parent: D3selec<SVGGraphicsElement>, pos: Vector, w: number, vals: Array<string | number> | number = 0){
-        super(parent, pos);
+    constructor(parent: D3selec<SVGGraphicsElement>, pos: Vector, anim_speed: number, w: number, vals: Array<string | number> | number = 0){
+        super(parent, pos, anim_speed);
         this.cell_width = w;
+
         if (typeof vals !== "number"){
             this.values = vals;
         } else {
@@ -93,7 +119,7 @@ export class GraphicList extends Graphic {
         return this.values[i-off];
     }
 
-    set(i: number, val: string | number | null, off: number = 1) : void {
+    set_value(i: number, val: string | number | null, off: number = 1) : void {
         if (i - off  < this.values.length){
             this.values[i-off] = val;
             this.group.select(`#text_${i-off}`).text(val===null?'':`${val}`);
@@ -105,15 +131,19 @@ export class GraphicList extends Graphic {
         this.draw();
     }
 
-    fill(val: string | number | null): void {
-        for (let i = 0; i < this.values.length; i++){
-            this.set(i, val, 0);
-        }
+    fill_values(val: string | number | null): void {
+        this.set_values(new Array(this.values.length).fill(val));
     }
 
     set_color(i: number, val: string, off: number = 1): void {
         if (i - off < this.values.length){
             this.group.select(`#cell_${i-off}`).attr('fill', val);
+        }
+    }
+
+    set_colors(cols: Array<string>): void {
+        for (let i=0; i < cols.length; i++){
+            this.set_color(i, cols[i]);
         }
     }
 
@@ -123,8 +153,22 @@ export class GraphicList extends Graphic {
         }
     }
 
-    shift(d: number): void {
-        this.translate(new Vector(d*this.cell_width, 0), this.anim_speed);
+    shift(d: number, anim?: number): void {
+        this.translate(new Vector(d*this.cell_width, 0), anim?anim:this.speed);
+    }
+
+    set_shift(d: number, anim?: number): void {
+        this.set_pos(this.pos.add(new Vector(d*this.cell_width, 0)), anim?anim:this.speed);
+    }
+
+    /*
+    h and v are horizontal and vertical offset, by default middle of the cell is given
+    h = 1 mean right, h= -1 mean left, and v= 1 or -1 mean bot and top respectively
+    0 mean center for h or v
+    */
+    get_cell_pos(i: number, h: number, v: number, offset: number = 1): Vector {
+        const center = this.pos.add(new Vector((i-offset+0.5)*this.cell_width, 0.5*this.cell_width));
+        return center.add(new Vector(0.5*h*this.cell_width, 0.5*v*this.cell_width));
     }
 }
 
@@ -137,8 +181,8 @@ export class Arrow extends Graphic{
     start_trans: Vector;
     end_trans: Vector;
   
-    constructor(parent: D3selec<SVGGraphicsElement>, start: Vector, end: Vector, color: string) {
-        super(parent, start);
+    constructor(parent: D3selec<SVGGraphicsElement>, start: Vector, end: Vector, anim_speed: number, color: string) {
+        super(parent, start, anim_speed);
         this.start = start;
         this.end = end;
         this.start_trans = new Vector(0, 0);
@@ -172,24 +216,24 @@ export class Arrow extends Graphic{
             .attr("marker-end", "url(#arrowhead)");
     }
 
-    translate_start(t: Vector, speed: number = 0): void {
+    translate_start(t: Vector, anim?: number): void {
         this.start = this.start.add(t);
-        this.update(speed * t.len());
+        this.update(anim?anim:this.speed * t.len());
     }
 
-    translate_end(t: Vector, speed: number = 0): void {
+    translate_end(t: Vector, anim?: number): void {
         this.end = this.end.add(t);
-        this.update(speed * t.len());
+        this.update(anim?anim:this.speed * t.len());
     }
 ;
-    set_start(t: Vector, speed: number = 0): void {
-        const duration = speed * this.start.sub(t).len();
+    set_start(t: Vector, anim?: number): void {
+        const duration = anim?anim:this.speed * this.start.sub(t).len();
         this.start = t;
         this.update(duration);
     }
 
-    set_end(t: Vector, speed: number = 0): void {
-        const duration = speed * this.end.sub(t).len();
+    set_end(t: Vector, anim?: number): void {
+        const duration = anim?anim:this.speed * this.end.sub(t).len();
         this.end = t;
         this.update(duration);
     } 
@@ -201,116 +245,5 @@ export class Arrow extends Graphic{
             .attr("y1", this.start.y)
             .attr("x2", this.end.x) 
             .attr("y2", this.end.y);
-    }
-}
-
-export interface Dynamic {
-    done: boolean;
-
-    next(): void;
-    skip(): void;
-    reset(): void;
-}
-
-
-export class DynamicSection {
-    container: HTMLElement;
-    menu: HTMLDivElement;
-    content: Dynamic;
-
-    constructor(container: HTMLElement, content: Dynamic, title: string){
-        this.content = content;
-        this.container = container;
-
-        this.menu = document.createElement('div');
-        this.menu.style.padding = '10px';
-        this.menu.classList.add('row-cols-auto');
-        this.menu.style.paddingLeft = `125px`;
-        this.menu.style.paddingBottom = '20px';
-        this.container.insertBefore(this.menu, this.container.firstChild);
-
-        if (title != ""){
-            const head = document.createElement('h3');
-            head.innerHTML = title;
-            head.style.paddingLeft = `125px`;
-            head.style.paddingBottom = '10px';
-            this.container.insertBefore(head, this.container.firstChild);
-        }
-        
-        this.build_menu();
-    }
-
-    build_menu(): void {
-        const next_button = document.createElement('button');
-        next_button.innerHTML = 'Next';
-        next_button.classList.add('btn');
-        next_button.classList.add('btn-outline-primary');
-        next_button.classList.add('dyn-menu-btn');
-        next_button.type = 'button';
-        next_button.addEventListener('click', this.content.next.bind(this.content));
-        this.menu.appendChild(next_button);
-
-        const skip_button = document.createElement('button');
-        skip_button.innerHTML = 'Skip';
-        skip_button.classList.add('btn');
-        skip_button.classList.add('btn-outline-primary');
-        skip_button.classList.add('dyn-menu-btn');
-        skip_button.type = 'button';
-        skip_button.addEventListener('click', this.content.skip.bind(this.content));
-        this.menu.appendChild(skip_button);
-
-        const reset_button = document.createElement('button');
-        reset_button.innerHTML = 'Reset';
-        reset_button.classList.add('btn');
-        reset_button.classList.add('btn-outline-primary');
-        reset_button.classList.add('dyn-menu-btn');
-        reset_button.type = 'button';
-        reset_button.addEventListener('click', this.content.reset.bind(this.content));
-        this.menu.appendChild(reset_button);
-    }
-}
-
-export class SlidingWindow extends Graphic {
-    text: GraphicList;
-    pattern: GraphicList;
-    arrow?: Arrow;
-
-    constructor(parent: D3selec<SVGGraphicsElement>, pos: Vector, w: number, text: string, pattern: string) {
-        super(parent, pos);
-        this.text = new GraphicList(this.group, pos, w, text.split(""));
-        this.pattern = new GraphicList(this.group, pos.add(new Vector(0, 2*w)), w, pattern.split(""));
-    }
-
-    equals(i: number, j: number): boolean {
-        if (this.pattern.get(i) == this.text.get(j)){
-            this.pattern.set_color(i, 'green');
-            this.text.set_color(j, 'green');
-            this.display_shift(i, j, 'green');
-            return true;
-        } else {
-            this.pattern.set_color(i, 'red');
-            this.text.set_color(j, 'red');
-            this.display_shift(i, j, 'red');
-            return false;
-        }
-    }
-
-    shift(i: number): void {
-        this.pattern.shift(i);
-        this.arrow?.translate_start(new Vector(i*this.pattern.cell_width, 0), 1);
-    }
-
-    display_shift(from: number, to: number, color: string = 'black'): void {
-        this.arrow?.remove();
-        const start = new Vector(this.pattern.get_pos().x + (from - 0.5) * this.pattern.cell_width, this.pattern.get_pos().y);
-        const end = new Vector(this.text.get_pos().x + (to - 0.5) * this.text.cell_width, this.text.get_pos().y + this.text.cell_width);
-        this.arrow = new Arrow(this.group, start, end, color);
-    }
-
-    reset(): void {
-        this.arrow?.remove();
-        this.pattern.reset_pos();
-        this.pattern.fill_color('white');
-        this.text.fill_color('white');
     }
 }
