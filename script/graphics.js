@@ -1,27 +1,46 @@
-import { Vector } from "./vector.js";
+export class Vector {
+    x;
+    y;
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+    }
+    add(other) {
+        return new Vector(this.x + other.x, this.y + other.y);
+    }
+    sub(other) {
+        return new Vector(this.x - other.x, this.y - other.y);
+    }
+    len() {
+        return Math.sqrt(Math.pow(this.x, 2) + Math.pow(this.x, 2));
+    }
+}
+;
 export class Graphic {
+    group; // Root
     pos; // initial postion
     trans; // translation
-    group; // Root
-    constructor(parent, pos) {
+    speed;
+    constructor(parent, pos, anim_speed) {
         this.pos = pos;
         this.trans = new Vector(0, 0);
         this.group = parent.append("g");
+        this.speed = anim_speed;
     }
     get_pos() {
         return this.pos.add(this.trans);
     }
-    set_pos(dest) {
+    set_pos(dest, anim) {
         let t = dest.sub(this.get_pos());
-        this.translate(t);
+        this.translate(t, anim ? anim : this.speed);
     }
     reset_pos() {
         this.set_pos(this.pos);
     }
-    translate(t, speed = 0) {
+    translate(t, anim) {
         this.trans = this.trans.add(t);
         this.group.transition()
-            .duration(speed * t.len())
+            .duration(anim ? anim : this.speed * t.len())
             .attr("transform", `translate(${this.trans.x}, ${this.trans.y})`);
     }
     clear() {
@@ -30,13 +49,15 @@ export class Graphic {
     remove() {
         this.group.remove();
     }
+    set_speed(s) {
+        this.speed = s;
+    }
 }
 export class GraphicList extends Graphic {
     values;
     cell_width;
-    anim_speed = 1;
-    constructor(parent, pos, w, vals = 0) {
-        super(parent, pos);
+    constructor(parent, pos, anim_speed, w, vals = 0) {
+        super(parent, pos, anim_speed);
         this.cell_width = w;
         if (typeof vals !== "number") {
             this.values = vals;
@@ -74,7 +95,7 @@ export class GraphicList extends Graphic {
     get(i, off = 1) {
         return this.values[i - off];
     }
-    set(i, val, off = 1) {
+    set_value(i, val, off = 1) {
         if (i - off < this.values.length) {
             this.values[i - off] = val;
             this.group.select(`#text_${i - off}`).text(val === null ? '' : `${val}`);
@@ -84,14 +105,17 @@ export class GraphicList extends Graphic {
         this.values = val;
         this.draw();
     }
-    fill(val) {
-        for (let i = 0; i < this.values.length; i++) {
-            this.set(i, val, 0);
-        }
+    fill_values(val) {
+        this.set_values(new Array(this.values.length).fill(val));
     }
     set_color(i, val, off = 1) {
         if (i - off < this.values.length) {
             this.group.select(`#cell_${i - off}`).attr('fill', val);
+        }
+    }
+    set_colors(cols) {
+        for (let i = 0; i < cols.length; i++) {
+            this.set_color(i, cols[i]);
         }
     }
     fill_color(val) {
@@ -99,8 +123,20 @@ export class GraphicList extends Graphic {
             this.set_color(i, val, 0);
         }
     }
-    shift(d) {
-        this.translate(new Vector(d * this.cell_width, 0), this.anim_speed);
+    shift(d, anim) {
+        this.translate(new Vector(d * this.cell_width, 0), anim ? anim : this.speed);
+    }
+    set_shift(d, anim) {
+        this.set_pos(this.pos.add(new Vector(d * this.cell_width, 0)), anim ? anim : this.speed);
+    }
+    /*
+    h and v are horizontal and vertical offset, by default middle of the cell is given
+    h = 1 mean right, h= -1 mean left, and v= 1 or -1 mean bot and top respectively
+    0 mean center for h or v
+    */
+    get_cell_pos(i, h, v, offset = 1) {
+        const center = this.pos.add(new Vector((i - offset + 0.5) * this.cell_width, 0.5 * this.cell_width));
+        return center.add(new Vector(0.5 * h * this.cell_width, 0.5 * v * this.cell_width));
     }
 }
 export class Arrow extends Graphic {
@@ -110,8 +146,8 @@ export class Arrow extends Graphic {
     end;
     start_trans;
     end_trans;
-    constructor(parent, start, end, color) {
-        super(parent, start);
+    constructor(parent, start, end, anim_speed, color) {
+        super(parent, start, anim_speed);
         this.start = start;
         this.end = end;
         this.start_trans = new Vector(0, 0);
@@ -142,22 +178,22 @@ export class Arrow extends Graphic {
             .attr("y2", this.end.y)
             .attr("marker-end", "url(#arrowhead)");
     }
-    translate_start(t, speed = 0) {
+    translate_start(t, anim) {
         this.start = this.start.add(t);
-        this.update(speed * t.len());
+        this.update(anim ? anim : this.speed * t.len());
     }
-    translate_end(t, speed = 0) {
+    translate_end(t, anim) {
         this.end = this.end.add(t);
-        this.update(speed * t.len());
+        this.update(anim ? anim : this.speed * t.len());
     }
     ;
-    set_start(t, speed = 0) {
-        const duration = speed * this.start.sub(t).len();
+    set_start(t, anim) {
+        const duration = anim ? anim : this.speed * this.start.sub(t).len();
         this.start = t;
         this.update(duration);
     }
-    set_end(t, speed = 0) {
-        const duration = speed * this.end.sub(t).len();
+    set_end(t, anim) {
+        const duration = anim ? anim : this.speed * this.end.sub(t).len();
         this.end = t;
         this.update(duration);
     }
@@ -168,94 +204,5 @@ export class Arrow extends Graphic {
             .attr("y1", this.start.y)
             .attr("x2", this.end.x)
             .attr("y2", this.end.y);
-    }
-}
-export class DynamicSection {
-    container;
-    menu;
-    content;
-    constructor(container, content, title) {
-        this.content = content;
-        this.container = container;
-        this.menu = document.createElement('div');
-        this.menu.style.padding = '10px';
-        this.menu.classList.add('row-cols-auto');
-        this.menu.style.paddingLeft = `125px`;
-        this.menu.style.paddingBottom = '20px';
-        this.container.insertBefore(this.menu, this.container.firstChild);
-        if (title != "") {
-            const head = document.createElement('h3');
-            head.innerHTML = title;
-            head.style.paddingLeft = `125px`;
-            head.style.paddingBottom = '10px';
-            this.container.insertBefore(head, this.container.firstChild);
-        }
-        this.build_menu();
-    }
-    build_menu() {
-        const next_button = document.createElement('button');
-        next_button.innerHTML = 'Next';
-        next_button.classList.add('btn');
-        next_button.classList.add('btn-outline-primary');
-        next_button.classList.add('dyn-menu-btn');
-        next_button.type = 'button';
-        next_button.addEventListener('click', this.content.next.bind(this.content));
-        this.menu.appendChild(next_button);
-        const skip_button = document.createElement('button');
-        skip_button.innerHTML = 'Skip';
-        skip_button.classList.add('btn');
-        skip_button.classList.add('btn-outline-primary');
-        skip_button.classList.add('dyn-menu-btn');
-        skip_button.type = 'button';
-        skip_button.addEventListener('click', this.content.skip.bind(this.content));
-        this.menu.appendChild(skip_button);
-        const reset_button = document.createElement('button');
-        reset_button.innerHTML = 'Reset';
-        reset_button.classList.add('btn');
-        reset_button.classList.add('btn-outline-primary');
-        reset_button.classList.add('dyn-menu-btn');
-        reset_button.type = 'button';
-        reset_button.addEventListener('click', this.content.reset.bind(this.content));
-        this.menu.appendChild(reset_button);
-    }
-}
-export class SlidingWindow extends Graphic {
-    text;
-    pattern;
-    arrow;
-    constructor(parent, pos, w, text, pattern) {
-        super(parent, pos);
-        this.text = new GraphicList(this.group, pos, w, text.split(""));
-        this.pattern = new GraphicList(this.group, pos.add(new Vector(0, 2 * w)), w, pattern.split(""));
-    }
-    equals(i, j) {
-        if (this.pattern.get(i) == this.text.get(j)) {
-            this.pattern.set_color(i, 'green');
-            this.text.set_color(j, 'green');
-            this.display_shift(i, j, 'green');
-            return true;
-        }
-        else {
-            this.pattern.set_color(i, 'red');
-            this.text.set_color(j, 'red');
-            this.display_shift(i, j, 'red');
-            return false;
-        }
-    }
-    shift(i) {
-        this.pattern.shift(i);
-        this.arrow?.translate_start(new Vector(i * this.pattern.cell_width, 0), 1);
-    }
-    display_shift(from, to, color = 'black') {
-        this.arrow?.remove();
-        const start = new Vector(this.pattern.get_pos().x + (from - 0.5) * this.pattern.cell_width, this.pattern.get_pos().y);
-        const end = new Vector(this.text.get_pos().x + (to - 0.5) * this.text.cell_width, this.text.get_pos().y + this.text.cell_width);
-        this.arrow = new Arrow(this.group, start, end, color);
-    }
-    reset() {
-        this.arrow?.remove();
-        this.pattern.reset_pos();
-        this.pattern.fill_color('white');
-        this.text.fill_color('white');
     }
 }
