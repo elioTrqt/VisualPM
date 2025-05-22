@@ -105,6 +105,14 @@ export class GraphicList extends Graphic {
         this.values = val;
         this.draw();
     }
+    append(val) {
+        this.values.push(val);
+        this.draw();
+    }
+    pop() {
+        this.values.pop();
+        this.draw();
+    }
     fill_values(val) {
         this.set_values(new Array(this.values.length).fill(val));
     }
@@ -137,6 +145,54 @@ export class GraphicList extends Graphic {
     get_cell_pos(i, h, v, offset = 1) {
         const center = this.pos.add(new Vector((i - offset + 0.5) * this.cell_width, 0.5 * this.cell_width));
         return center.add(new Vector(0.5 * h * this.cell_width, 0.5 * v * this.cell_width));
+    }
+}
+export class GraphicDict extends Graphic {
+    content;
+    constructor(parent, pos, w, pattern) {
+        super(parent, pos, 0);
+        this.content = new Map();
+        const sigma = [...new Set(pattern)].sort();
+        sigma.push('...');
+        let offset_pos = pos;
+        for (let c of sigma) {
+            this.content.set(c, new GraphicList(this.group, offset_pos, 0, w, [c, ""]));
+            offset_pos = offset_pos.add(new Vector(0, w));
+        }
+    }
+    set_value(c, i, v) {
+        this.content.get(c).set_value(i, v, 0);
+    }
+    set_values(c, vals) {
+        const total_values = [c];
+        this.content.get(c).set_values(total_values.concat(vals));
+    }
+    set_color(c, i, v) {
+        this.content.get(c).set_color(i, v, 0);
+    }
+    fill_color(v) {
+        for (let c of this.content.keys()) {
+            this.content.get(c).fill_color(v);
+        }
+    }
+    append(c, v) {
+        this.content.get(c).append(v);
+    }
+    pop(c) {
+        this.content.get(c).pop();
+    }
+    fill(map) {
+        for (let c of map.keys()) {
+            let data = [c];
+            data = data.concat(map.get(c));
+            this.content.get(c).set_values(data);
+        }
+        this.content.get('...').set_values(['...', 0]);
+    }
+    empty() {
+        for (let c of this.content.keys()) {
+            this.content.get(c).set_values([c, ""]);
+        }
     }
 }
 export class Arrow extends Graphic {

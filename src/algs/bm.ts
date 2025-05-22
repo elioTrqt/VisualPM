@@ -1,5 +1,5 @@
 
-import { suff_result, Update, methodCall } from "../types.js"
+import { suff_result, Update, methodCall, right_result } from "../types.js"
 
 export function init_suff(pattern: string): suff_result {
     const m = pattern.length;
@@ -143,4 +143,64 @@ export function init_decal(pattern: string, suff: number[]): suff_result {
     steps.push(last_step);
 
     return {data:decal, steps:steps};
+}
+
+export function init_right(pattern: string, improved: boolean): right_result {
+    const right = new Map<string, number[]>();
+    const steps: Update[] = [];
+
+    const sigma = [...new Set(pattern)].sort();
+    sigma.push('...');
+
+    const first_step: Update = {front: [], back: [], message: ""};
+    first_step.message = `On initialise R[a] avec ${improved ? "un vecteur contenant 0" : "un entier à 0"} pour tout a dans l'alphabet Sigma = {${sigma.join(',')}}.`;
+
+    for (let c of sigma) {
+        right.set(c, [0]);
+        first_step.front.push(new methodCall("table", "set_value", [c, 1, 0]));
+        first_step.back.push(new methodCall("table", "set_value", [c, 1, ""]));
+    }
+    steps.push(first_step);
+
+    let to_revert: methodCall[] = [];
+
+    for (let i=1; i <= pattern.length; i++){
+        const step: Update = {front: [], back: [], message: ""};
+        step.front.push(new methodCall("index", "set_color", [i, "grey"]));
+        step.front.push(new methodCall("pattern", "set_color", [i, "green"]));
+        step.front = to_revert.concat(step.front);
+        step.back.push(new methodCall("index", "set_color", [i, "white"]));
+        step.back.push(new methodCall("pattern", "set_color", [i, "white"]));
+        step.back.push(new methodCall("table", "set_color", [pattern[i-1], 0, "white"]));
+        to_revert = step.back.slice();
+        step.message = `Une nouvelle occurence de '${pattern[i-1]}'${improved ? "" : ", plus à droite que la précédente,"} est trouvé à la position ${i} ;<br/>`;
+        if (improved){
+            step.message += `On rajoute ${i} au vecteur R[${pattern[i-1]}] ;`;
+            step.front.push(new methodCall("table", "set_values", [pattern[i-1], right.get(pattern[i-1])!.concat([i])]));
+            step.front.push(new methodCall("table", "set_color", [pattern[i-1], right.get(pattern[i-1])!.length + 1, "grey"]));
+            step.back.push(new methodCall("table", "set_values", [pattern[i-1], right.get(pattern[i-1])!.slice()]));
+            step.back.push(new methodCall("table", "set_color", [pattern[i-1], right.get(pattern[i-1])!.length + 1, "white"]));
+            to_revert.push(new methodCall("table", "set_color", [pattern[i-1], right.get(pattern[i-1])!.length + 1, "white"]));
+            right.get(pattern[i-1])!.push(i);
+        } else {
+            step.message += `On met à jour R tel que R[${pattern[i-1]}] = ${i} ;`;
+            step.front.push(new methodCall("table", "set_value", [pattern[i-1], 1, i]));
+            step.front.push(new methodCall("table", "set_color", [pattern[i-1], 1, "grey"]));
+            step.back.push(new methodCall("table", "set_value", [pattern[i-1], 1, right.get(pattern[i-1])![0]]));
+            step.back.push(new methodCall("table", "set_color", [pattern[i-1], 1, "white"]));
+            to_revert.push(new methodCall("table", "set_color", [pattern[i-1], 1, "white"]))
+            right.set(pattern[i-1], [i]);
+        }
+        step.front.push(new methodCall("table", "set_color", [pattern[i-1], 0, "green"]));
+        steps.push(step);
+    }
+
+    const last_step: Update = {front: [], back: [], message: ""};
+    last_step.front.push(new methodCall("index", "fill_color", ["white"]));
+    last_step.front.push(new methodCall("pattern", "fill_color", ["white"]));
+    last_step.front.push(new methodCall("table", "fill_color", ["white"]));
+    last_step.message = "Table R complète !";
+    steps.push(last_step);
+
+    return {data:right, steps: steps};
 }

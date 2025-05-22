@@ -131,6 +131,16 @@ export class GraphicList extends Graphic {
         this.draw();
     }
 
+    append(val: string | number | null): void {
+        this.values.push(val);
+        this.draw();
+    }
+
+    pop(): void {
+        this.values.pop();
+        this.draw();
+    }
+
     fill_values(val: string | number | null): void {
         this.set_values(new Array(this.values.length).fill(val));
     }
@@ -169,6 +179,66 @@ export class GraphicList extends Graphic {
     get_cell_pos(i: number, h: number, v: number, offset: number = 1): Vector {
         const center = this.pos.add(new Vector((i-offset+0.5)*this.cell_width, 0.5*this.cell_width));
         return center.add(new Vector(0.5*h*this.cell_width, 0.5*v*this.cell_width));
+    }
+}
+
+export class GraphicDict extends Graphic {
+    content: Map<string, GraphicList>;
+
+    constructor(parent: D3selec<SVGGraphicsElement>, pos: Vector, w: number, pattern: string){
+        super(parent, pos, 0);
+        this.content = new Map<string, GraphicList>();
+
+        const sigma = [...new Set(pattern)].sort();
+        sigma.push('...');
+        
+        let offset_pos = pos;
+        for (let c of sigma){
+            this.content.set(c, new GraphicList(this.group, offset_pos, 0, w, [c, ""]));
+            offset_pos = offset_pos.add(new Vector(0, w));
+        }
+    }
+
+    set_value(c: string, i: number, v: number | string | null): void {
+        this.content.get(c)!.set_value(i, v, 0);
+    }
+
+    set_values(c: string, vals: Array<number | string | null>): void {
+        const total_values: Array<string | number | null> = [c];
+        this.content.get(c)!.set_values(total_values.concat(vals));
+    }
+
+    set_color(c: string, i: number, v: string): void {
+        this.content.get(c)!.set_color(i, v, 0);
+    }
+
+    fill_color(v: string): void {
+        for (let c of this.content.keys()){
+            this.content.get(c)!.fill_color(v);
+        }
+    }
+
+    append(c: string, v: number | string | null): void {
+        this.content.get(c)!.append(v);
+    }
+
+    pop(c: string): void {
+        this.content.get(c)!.pop();
+    }
+
+    fill(map: Map<string, Array<number>>): void {
+        for (let c of map.keys()){
+            let data: Array<string | number> = [c];
+            data = data.concat(map.get(c)!)
+            this.content.get(c)!.set_values(data);
+        }
+        this.content.get('...')!.set_values(['...', 0]);
+    }
+
+    empty(): void {
+        for (let c of this.content.keys()){
+            this.content.get(c)!.set_values([c, ""]);
+        }
     }
 }
 

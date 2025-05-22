@@ -19,10 +19,8 @@ export class DynamicSection extends Graphic {
     }
     next() {
         if (this.current_step >= this.steps.length) {
-            console.log(`Suff/Decal Table : next() (no effect, already finished at ${this.current_step})`);
             return false;
         }
-        console.log(`Suff/Decal Table : next (step ${this.current_step} to ${this.current_step + 1})`);
         if (this.current_step == this.steps.length - 1) {
             this.skip();
             return false;
@@ -36,10 +34,8 @@ export class DynamicSection extends Graphic {
     }
     prev() {
         if (this.current_step == -1) {
-            console.log(`Suff/Decal Table : prev() (no effect, already reset at step ${this.current_step})`);
             return false;
         }
-        console.log(`Suff/Decal Table : prev (step ${this.current_step} to ${this.current_step - 1})`);
         if (this.current_step == 0) {
             this.reset();
             return false;
@@ -57,10 +53,12 @@ export class DynamicSection extends Graphic {
         return true;
     }
     skip() {
-        while (this.next()) { }
+        this.current_msg = "";
+        this.current_step = this.steps.length;
     }
     reset() {
-        while (this.prev()) { }
+        this.current_msg = "";
+        this.current_step = -1;
     }
     is_done() {
         return this.current_step >= this.steps.length;

@@ -33,10 +33,8 @@ export class DynamicSection extends Graphic implements Dynamic {
 
     next(): boolean {
         if (this.current_step >= this.steps.length){
-            console.log(`Suff/Decal Table : next() (no effect, already finished at ${this.current_step})`);
             return false;
         }
-        console.log(`Suff/Decal Table : next (step ${this.current_step} to ${this.current_step + 1})`);
         
         if (this.current_step == this.steps.length - 1){
             this.skip();
@@ -54,10 +52,8 @@ export class DynamicSection extends Graphic implements Dynamic {
 
     prev(): boolean {
         if (this.current_step == -1){
-            console.log(`Suff/Decal Table : prev() (no effect, already reset at step ${this.current_step})`);
             return false;
         }
-        console.log(`Suff/Decal Table : prev (step ${this.current_step} to ${this.current_step - 1})`);
 
         if (this.current_step == 0){
             this.reset();
@@ -79,11 +75,13 @@ export class DynamicSection extends Graphic implements Dynamic {
     }
 
     skip(): void {
-        while(this.next()){}
+        this.current_msg = "";
+        this.current_step = this.steps.length;
     }
 
     reset(): void {
-        while(this.prev()){}
+        this.current_msg = "";
+        this.current_step = -1;
     }
 
     is_done(): boolean {
