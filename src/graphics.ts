@@ -57,6 +57,10 @@ export class Graphic {
             .attr("transform", `translate(${this.trans.x}, ${this.trans.y})`);
     }
 
+    display(state: boolean): void {
+        this.group.style("display", state ? null : "none");
+    }
+
     clear(): void {
         this.group.selectAll("*").remove();
     }

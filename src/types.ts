@@ -24,12 +24,13 @@ export type SlidingStep = {
     },
 };
 
+// Call the method "method" of attribute "object", with args "args"
 export class methodCall {
     object: string;
     method: string;
     args: any[];
-    constructor(objec: string, method: string, args: any[]){
-        this.object = objec;
+    constructor(obj: string, method: string, args: any[]){
+        this.object = obj;
         this.method = method;
         this.args = args;
     }
@@ -41,6 +42,8 @@ export type Update = {
     message: string,
 }
 
+export type AlgUpdate = Map<string, Update>;
+
 export type alg_result<T> = {
     data: T,
     steps: Array<Update>
@@ -49,3 +52,17 @@ export type alg_result<T> = {
 export type suff_result = alg_result<Array<number>>;
 export type right_result = alg_result<Map<string, Array<number>>>;
 export type bm_result = alg_result<Array<number>>;
+
+export interface Updatable {
+    update(todo: methodCall[]): void;
+    skip(): void;
+    reset(): void;
+}
+
+export interface DomElement {
+    container: HTMLElement;
+}
+
+export function append_to(parent: DomElement, child: DomElement){
+    parent.container.appendChild(child.container);
+}

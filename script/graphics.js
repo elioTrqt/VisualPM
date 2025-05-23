@@ -43,6 +43,9 @@ export class Graphic {
             .duration(anim ? anim : this.speed * t.len())
             .attr("transform", `translate(${this.trans.x}, ${this.trans.y})`);
     }
+    display(state) {
+        this.group.style("display", state ? null : "none");
+    }
     clear() {
         this.group.selectAll("*").remove();
     }
