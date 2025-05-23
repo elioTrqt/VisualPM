@@ -1,4 +1,4 @@
-import { DynamicMenu, DynamicSection } from "./dynamic.js";
+import { Dynamic, DynamicMenu, DynamicSection } from "./dynamic.js";
 import { append_to } from "../types.js";
 export class Message {
     container;
@@ -20,6 +20,19 @@ export class Message {
         else {
             this.container.style.removeProperty("display");
         }
+    }
+}
+class Counter {
+    container;
+    total;
+    constructor(total) {
+        this.container = document.createElement('div');
+        this.container.classList.add("comparaison-count-container");
+        this.total = total;
+        this.update(0);
+    }
+    update(n) {
+        this.container.innerHTML = `Nombre de comparaison : ${n}`;
     }
 }
 export class Header {
@@ -73,5 +86,12 @@ export class AlgSection {
             append_to(this, c);
     }
 }
-class MainAlg {
+export class PMAlg extends Dynamic {
+    title = "testt";
+    help = "testh";
+    counter;
+    constructor() {
+        super();
+        this.counter = new Counter(0);
+    }
 }

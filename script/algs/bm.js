@@ -1,4 +1,4 @@
-import { methodCall } from "../types.js";
+import { Update, methodCall } from "../types.js";
 export function init_suff(pattern) {
     const m = pattern.length;
     const suff = new Array(m + 1);
@@ -34,9 +34,9 @@ export function init_suff(pattern) {
         backward.push(new methodCall("suff", "set_value", [i, ""]));
         const msg = `Le plus grand suffixe de P[1...${i}] (='${pattern.slice(0, i)}') qui est aussi suffixe de P est '${pattern.slice(i - suff[i], i)}', de taille ${i - (i - suff[i])} ;
             <br/>Donc Suff[${i}] = ${i - (i - suff[i])};`;
-        steps.push({ front: front, back: backward, message: msg });
+        steps.push(new Update(front, backward, msg));
     }
-    const last_step = { front: [], back: [], message: `Table Suff complète !` };
+    const last_step = new Update([], [], `Table Suff complète !`);
     for (let att of ["index", "suff", "pattern", "decal"])
         last_step.front.push(new methodCall(att, "fill_color", ["white"]));
     steps.push(last_step);
@@ -47,7 +47,7 @@ export function init_decal(pattern, suff) {
     const decal = new Array(m + 1);
     const steps = new Array();
     let i = 1;
-    steps.push({ front: [], back: [], message: `Initialisation à |P| = ${m}.` });
+    steps.push(new Update([], [], `Initialisation à |P| = ${m}.`));
     for (let j = 1; j <= m; j++) {
         decal[j] = m;
         steps[0].front.push(new methodCall("decal", "set_value", [j, m]));
@@ -62,7 +62,7 @@ export function init_decal(pattern, suff) {
                     On a alors j = ${j} car ${j} <= ${m - i} et Suff[${j}] = ${suff[j]}, avec b = ${pattern.slice(0, j)} le bord correspondant ; <br/>
                     Enfin le décalage est donné par D[${i}] = |P| - j = ${m - j} 
                     qui correspond au décalage qui permet de décaler l'occurence préfixe de b "à la place de" son occurence suffixe ;`;
-                const step = { front: [], back: [], message: msg };
+                const step = new Update([], [], msg);
                 for (let att of ["decal", "index", "pattern", "suff"])
                     step.front.push(new methodCall(att, "fill_color", ["white"]));
                 step.front.push(new methodCall("index", "set_color", [i, "grey"]));
@@ -89,7 +89,7 @@ export function init_decal(pattern, suff) {
             En cas d'échec à la position i = ${i}, on à déjà reconu le suffixe u = P[${i + 1}...${m}] = ${pattern.slice(i, m)}, de taille |u| = ${m - i} ;<br/>
             On cherche u' une autre occurence de u dans P (la plus à droite), tel que le caractère qui la précède soit différent du caractère qui précède u, c'est à dire le caractère d'échec P[${i}] = ${pattern[i - 1]} ; <br/>
             Si u' existe, sa présence se traduit par la plus grande position j tel que Suff[j] = |u| = ${m - i} ;<br/>`;
-        const step = { front: [], back: [], message: msg };
+        const step = new Update([], [], msg);
         for (let att of ["decal", "index", "pattern", "suff"])
             step.front.push(new methodCall(att, "fill_color", ["white"]));
         step.front.push(new methodCall("index", "set_color", [i, "grey"]));
@@ -111,7 +111,7 @@ export function init_decal(pattern, suff) {
         }
         steps.push(step);
     }
-    const last_step = { front: [], back: [], message: `Table D complète !` };
+    const last_step = new Update([], [], `Table D complète !`);
     for (let att of ["decal", "index", "pattern", "suff"])
         last_step.front.push(new methodCall(att, "fill_color", ["white"]));
     steps.push(last_step);
@@ -122,7 +122,7 @@ export function init_right(pattern, improved) {
     const steps = [];
     const sigma = [...new Set(pattern)].sort();
     sigma.push('...');
-    const first_step = { front: [], back: [], message: "" };
+    const first_step = new Update();
     first_step.message = `On initialise R[a] avec ${improved ? "un vecteur contenant 0" : "un entier à 0"} pour tout a dans l'alphabet Sigma = {${sigma.join(',')}}.`;
     for (let c of sigma) {
         right.set(c, [0]);
@@ -132,7 +132,7 @@ export function init_right(pattern, improved) {
     steps.push(first_step);
     let to_revert = [];
     for (let i = 1; i <= pattern.length; i++) {
-        const step = { front: [], back: [], message: "" };
+        const step = new Update();
         step.front.push(new methodCall("index", "set_color", [i, "grey"]));
         step.front.push(new methodCall("pattern", "set_color", [i, "green"]));
         step.front = to_revert.concat(step.front);
@@ -162,7 +162,7 @@ export function init_right(pattern, improved) {
         step.front.push(new methodCall("table", "set_color", [pattern[i - 1], 0, "green"]));
         steps.push(step);
     }
-    const last_step = { front: [], back: [], message: "" };
+    const last_step = new Update();
     last_step.front.push(new methodCall("index", "fill_color", ["white"]));
     last_step.front.push(new methodCall("pattern", "fill_color", ["white"]));
     last_step.front.push(new methodCall("table", "fill_color", ["white"]));

@@ -1,10 +1,8 @@
-// @ts-ignore
-import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
-import { Graphic, GraphicDict, GraphicList, Vector } from "../graphics.js";
+import { GraphicDict, GraphicList, Vector } from "../graphics.js";
 import { init_decal, init_suff, init_right } from "../algs/bm.js";
 import { AlgSection } from "./alg.js";
-class DTable extends Graphic {
-    container;
+import { DynamicCanvas } from "./dynamic.js";
+class DTable extends DynamicCanvas {
     index;
     pattern;
     suff;
@@ -12,18 +10,8 @@ class DTable extends Graphic {
     suff_vals;
     decal_vals;
     constructor(pattern, w, suff, decal) {
-        const container = document.createElement('svg');
-        container.classList.add('dyn-graphic-container');
-        container.id = 'dtable-graphic';
-        const pos = new Vector(0, 0);
-        const size = DTable.get_size(pattern, w);
-        const svg = d3.select(container)
-            .append('svg')
-            .attr('width', size.x)
-            .attr('height', size.y)
-            .append('g');
-        super(svg, pos, 0);
-        this.container = container;
+        super(new Vector(0, 0), DTable.get_size(pattern, w), 0);
+        this.container.id = 'dtable-graphic';
         this.suff_vals = suff;
         this.decal_vals = decal;
         const offset_pos = new Vector(80, 25);
@@ -31,23 +19,10 @@ class DTable extends Graphic {
         this.pattern = new GraphicList(this.group, offset_pos.add(new Vector(0, w)), 0, w, pattern.split(""));
         this.suff = new GraphicList(this.group, offset_pos.add(new Vector(0, 2 * w)), 0, w, Array(pattern.length).fill(""));
         this.decal = new GraphicList(this.group, offset_pos.add(new Vector(0, 3 * w)), 0, w, Array(pattern.length).fill(""));
-        this.append_text('i', offset_pos.x - 10, offset_pos.y + .5 * w);
-        this.append_text('P[ i ]', offset_pos.x - 10, offset_pos.y + 1.5 * w);
-        this.append_text('Suff[ i ]', offset_pos.x - 10, offset_pos.y + 2.5 * w);
-        this.append_text(`D[ i ]`, offset_pos.x - 10, offset_pos.y + 3.5 * w);
-    }
-    append_text(text, x, y) {
-        this.group.append('text')
-            .attr('x', x)
-            .attr('y', y)
-            .attr("font-size", "20px")
-            .attr('text-anchor', 'end')
-            .attr('dominant-baseline', 'middle')
-            .text(text);
-    }
-    update(todo) {
-        for (let t of todo)
-            this[t.object][t.method](...t.args);
+        this.append_text('i', offset_pos.x - 10, offset_pos.y + .5 * w, 'middle', 'end');
+        this.append_text('P[ i ]', offset_pos.x - 10, offset_pos.y + 1.5 * w, 'middle', 'end');
+        this.append_text('Suff[ i ]', offset_pos.x - 10, offset_pos.y + 2.5 * w, 'middle', 'end');
+        this.append_text(`D[ i ]`, offset_pos.x - 10, offset_pos.y + 3.5 * w, 'middle', 'end');
     }
     skip() {
         console.log("skip D");
@@ -71,26 +46,15 @@ class DTable extends Graphic {
         return new Vector(100 + pattern.length * w, 5 * w);
     }
 }
-class RTable extends Graphic {
-    container;
+class RTable extends DynamicCanvas {
     index;
     pattern;
     table;
     improved;
     right_vals;
     constructor(pattern, improved, w, right) {
-        const container = document.createElement('svg');
-        container.classList.add('dyn-graphic-container');
-        container.id = 'rtable-graphic';
-        const pos = new Vector(0, 0);
-        const size = RTable.get_size(pattern, improved, w);
-        const svg = d3.select(container)
-            .append('svg')
-            .attr('width', size.x)
-            .attr('height', size.y)
-            .append('g');
-        super(svg, pos, 0);
-        this.container = container;
+        super(new Vector(0, 0), RTable.get_size(pattern, improved, w), 0);
+        this.container.id = 'rtable-graphic';
         this.improved = improved;
         this.right_vals = right;
         const offset_pos = new Vector(80, 25);
@@ -101,14 +65,6 @@ class RTable extends Graphic {
         this.append_text('P[ i ]', offset_pos.x - 10, offset_pos.y + 1.5 * w, 'middle', 'end');
         this.append_text('a', offset_pos.x + 0.5 * w, offset_pos.y + 3.2 * w, 'bottom', 'middle');
         this.append_text(improved ? 'Positions de a' : 'R[ a ]', offset_pos.x + 1.5 * w, offset_pos.y + 3.2 * w, 'bottom', improved ? 'left' : 'middle');
-    }
-    append_text(text, x, y, baseline, anchor) {
-        this.group.append('text').attr('x', x).attr('y', y).attr("font-size", "20px")
-            .attr('text-anchor', anchor).attr('dominant-baseline', baseline).text(text);
-    }
-    update(todo) {
-        for (let t of todo)
-            this[t.object][t.method](...t.args);
     }
     skip() {
         this.index.fill_color("white");

@@ -9,6 +9,16 @@ export class methodCall {
         this.args = args;
     }
 }
+export class Update {
+    front;
+    back;
+    message;
+    constructor(front, back, message) {
+        this.front = front ? front : [];
+        this.back = back ? back : [];
+        this.message = message ? message : "";
+    }
+}
 export function append_to(parent, child) {
     parent.container.appendChild(child.container);
 }

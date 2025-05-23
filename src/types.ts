@@ -36,10 +36,16 @@ export class methodCall {
     }
 }
 
-export type Update = {
-    front: methodCall[],
-    back: methodCall[],
-    message: string,
+export class Update {
+    front: methodCall[];
+    back: methodCall[];
+    message: string;
+
+    constructor(front?: methodCall[], back?: methodCall[], message?: string){
+        this.front = front? front: [];
+        this.back = back? back: [];
+        this.message = message? message: "";
+    }
 }
 
 export type AlgUpdate = Map<string, Update>;

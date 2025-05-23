@@ -1,3 +1,6 @@
+// @ts-ignore
+import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+import { Graphic } from "../graphics.js";
 export class Dynamic {
     current_step = -1;
     steps = [];
@@ -146,88 +149,30 @@ export class DynamicMenu {
         }
     }
 }
-/*
-export class DynamicSection extends Graphic {
-    container: HTMLDivElement;
-    current_step: number = -1;
-    current_msg: string = "";
-    steps: Update[] = [];
-
-    constructor(pos: Vector, size: Vector, anim_speed: number){
-        const container = document.createElement('div');
-        container.classList.add('dyn-section-container');
+export class DynamicCanvas extends Graphic {
+    container;
+    constructor(pos, size, anim_speed) {
+        const container = document.createElement('svg');
+        container.classList.add('dyn-graphic-container');
         const svg = d3.select(container)
             .append('svg')
             .attr('width', size.x)
             .attr('height', size.y)
             .append('g');
-        super(svg, pos, anim_speed);
+        super(svg, pos, 0);
         this.container = container;
     }
-
-    next(): boolean {
-        if (this.current_step >= this.steps.length){
-            return false;
-        }
-        
-        if (this.current_step == this.steps.length - 1){
-            this.skip();
-            return false;
-        }
-
-        for (let c of this.steps[this.current_step + 1].front){
-            this[c.object as keyof DynamicSection][c.method](...c.args);
-        }
-        this.current_msg = this.steps[this.current_step + 1].message;
-
-        this.current_step++;
-        return true;
+    append_text(text, x, y, baseline, anchor) {
+        this.group.append('text')
+            .attr('x', x)
+            .attr('y', y)
+            .attr("font-size", "20px")
+            .attr('text-anchor', anchor)
+            .attr('dominant-baseline', baseline)
+            .text(text);
     }
-
-    prev(): boolean {
-        if (this.current_step == -1){
-            return false;
-        }
-
-        if (this.current_step == 0){
-            this.reset();
-            return false;
-        }
-        
-        if (this.current_step < this.steps.length){
-            for (let c of this.steps[this.current_step].back){
-                this[c.object as keyof DynamicSection][c.method](...c.args);
-            }
-        }
-        for (let c of this.steps[this.current_step - 1].front){
-            this[c.object as keyof DynamicSection][c.method](...c.args);
-        }
-        this.current_msg = this.steps[this.current_step - 1].message;
-
-        this.current_step--;
-        return true;
-    }
-
-    skip(): void {
-        this.current_msg = "";
-        this.current_step = this.steps.length;
-    }
-
-    reset(): void {
-        this.current_msg = "";
-        this.current_step = -1;
-    }
-
-    is_done(): boolean {
-        return this.current_step >= this.steps.length;
-    }
-
-    is_started(): boolean {
-        return this.current_step > -1;
-    }
-
-    get_current_message(): string {
-        return this.current_msg;
+    update(todo) {
+        for (let t of todo)
+            this[t.object][t.method](...t.args);
     }
 }
-*/ 

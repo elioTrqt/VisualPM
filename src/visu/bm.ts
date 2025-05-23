@@ -5,11 +5,10 @@ import { Graphic, GraphicDict, GraphicList, Vector, D3selec } from "../graphics.
 import { init_decal, init_suff, init_right } from "../algs/bm.js";
 import { Updatable, DomElement, methodCall } from "../types.js";
 import { AlgSection } from "./alg.js";
+import { DynamicCanvas } from "./dynamic.js";
 
 
-class DTable extends Graphic implements Updatable, DomElement {
-    container: HTMLElement;
-
+class DTable extends DynamicCanvas {
     index: GraphicList;
     pattern: GraphicList;
     suff: GraphicList;
@@ -19,20 +18,8 @@ class DTable extends Graphic implements Updatable, DomElement {
     decal_vals: number[];
 
     constructor(pattern: string, w: number, suff: number[], decal: number[]){
-        const container = document.createElement('svg');
-        container.classList.add('dyn-graphic-container');
-        container.id = 'dtable-graphic';
-
-        const pos = new Vector(0, 0);
-        const size = DTable.get_size(pattern, w);
-        const svg = d3.select(container)
-            .append('svg')
-            .attr('width', size.x)
-            .attr('height', size.y)
-            .append('g');
-
-        super(svg, pos, 0);
-        this.container = container;
+        super(new Vector(0, 0), DTable.get_size(pattern, w), 0);
+        this.container.id = 'dtable-graphic';
         this.suff_vals = suff;
         this.decal_vals = decal;
 
@@ -42,25 +29,10 @@ class DTable extends Graphic implements Updatable, DomElement {
         this.suff = new GraphicList(this.group, offset_pos.add(new Vector(0, 2*w)), 0, w, Array(pattern.length).fill(""));
         this.decal = new GraphicList(this.group, offset_pos.add(new Vector(0, 3*w)), 0, w, Array(pattern.length).fill(""));
 
-        this.append_text('i', offset_pos.x - 10, offset_pos.y + .5*w);
-        this.append_text('P[ i ]', offset_pos.x - 10, offset_pos.y + 1.5*w);
-        this.append_text('Suff[ i ]', offset_pos.x - 10, offset_pos.y + 2.5*w);
-        this.append_text(`D[ i ]`, offset_pos.x - 10, offset_pos.y + 3.5*w);
-    }
-
-    append_text(text: string, x: number, y: number): void {
-        this.group.append('text')
-            .attr('x', x)
-            .attr('y', y)
-            .attr("font-size", "20px")
-            .attr('text-anchor', 'end')
-            .attr('dominant-baseline', 'middle')
-            .text(text);
-    }
-
-    update(todo: methodCall[]): void {
-        for (let t of todo) 
-            this[t.object as keyof DTable][t.method](...t.args);
+        this.append_text('i', offset_pos.x - 10, offset_pos.y + .5*w, 'middle', 'end');
+        this.append_text('P[ i ]', offset_pos.x - 10, offset_pos.y + 1.5*w, 'middle', 'end');
+        this.append_text('Suff[ i ]', offset_pos.x - 10, offset_pos.y + 2.5*w, 'middle', 'end');
+        this.append_text(`D[ i ]`, offset_pos.x - 10, offset_pos.y + 3.5*w, 'middle', 'end');
     }
 
     skip(): void {
@@ -88,9 +60,7 @@ class DTable extends Graphic implements Updatable, DomElement {
     }
 }
 
-class RTable extends Graphic implements Updatable, DomElement {
-    container: HTMLElement;
-
+class RTable extends DynamicCanvas {
     index: GraphicList;
     pattern: GraphicList;
     table: GraphicDict;
@@ -99,20 +69,8 @@ class RTable extends Graphic implements Updatable, DomElement {
     right_vals: Map<string, Array<number>>;
 
     constructor(pattern: string, improved: boolean, w: number, right: Map<string, Array<number>>){
-        const container = document.createElement('svg');
-        container.classList.add('dyn-graphic-container');
-        container.id = 'rtable-graphic';
-
-        const pos = new Vector(0, 0);
-        const size = RTable.get_size(pattern, improved, w);
-        const svg = d3.select(container)
-            .append('svg')
-            .attr('width', size.x)
-            .attr('height', size.y)
-            .append('g');
-
-        super(svg, pos, 0);
-        this.container = container;
+        super(new Vector(0, 0), RTable.get_size(pattern, improved, w), 0);
+        this.container.id = 'rtable-graphic';
         this.improved = improved;
         this.right_vals = right;
 
@@ -126,16 +84,6 @@ class RTable extends Graphic implements Updatable, DomElement {
         this.append_text('a', offset_pos.x + 0.5 * w, offset_pos.y + 3.2*w, 'bottom', 'middle');
         this.append_text(improved ? 'Positions de a' : 'R[ a ]', offset_pos.x + 1.5 * w, offset_pos.y + 3.2*w, 'bottom', improved ? 'left' : 'middle');
         
-    }
-
-    append_text(text: string, x: number, y: number, baseline: string, anchor: string): void {
-        this.group.append('text').attr('x', x).attr('y', y).attr("font-size", "20px")
-            .attr('text-anchor', anchor).attr('dominant-baseline', baseline).text(text);
-    }
-
-    update(todo: methodCall[]): void {
-        for (let t of todo) 
-            this[t.object as keyof RTable][t.method](...t.args);
     }
 
     skip(): void {

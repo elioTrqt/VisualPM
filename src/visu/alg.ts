@@ -1,4 +1,4 @@
-import { DynamicMenu, DynamicSection } from "./dynamic.js";
+import { Dynamic, DynamicMenu, DynamicSection } from "./dynamic.js";
 import { methodCall, AlgUpdate, DomElement, Updatable, append_to, Update } from "../types.js";
 
 export class Message implements DomElement {
@@ -23,6 +23,22 @@ export class Message implements DomElement {
         } else {
             this.container.style.removeProperty("display");
         }
+    }
+}
+
+class Counter implements DomElement {
+    container: HTMLDivElement;
+    total: number;
+
+    constructor(total: number){
+        this.container = document.createElement('div');
+        this.container.classList.add("comparaison-count-container");
+        this.total = total;
+        this.update(0);
+    }
+
+    update(n: number): void {
+        this.container.innerHTML = `Nombre de comparaison : ${n}`;
     }
 }
 
@@ -90,5 +106,15 @@ export class AlgSection implements DomElement {
 }
 
 
-class MainAlg {
+export class PMAlg extends Dynamic {
+    title: string = "testt";
+    help: string = "testh";
+    counter: Counter;
+
+
+
+    constructor(){
+        super();
+        this.counter = new Counter(0);
+    }
 }
