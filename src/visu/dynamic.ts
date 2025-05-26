@@ -6,12 +6,21 @@ import { Message } from "./alg.js"
 import { Graphic, GraphicDict, GraphicList, Vector, D3selec } from "../graphics.js";
 import { AlgSection } from "./alg.js";
 
-export class Dynamic {
-    current_step: number = -1;
-    steps: Update[] = [];
+export interface IDynamic {
+    next(): boolean;
+    prev(): boolean;
+    skip(): void;
+    reset(): void;
+    is_done(): boolean;
+    is_started(): boolean;
+}
 
-    send_front_update(update: Update): void {}
-    send_back_update(update: Update): void {}
+export class Dynamic implements IDynamic {
+    current_step: number = -1;
+    steps: any[] = [];
+
+    send_front_update(): void {}
+    send_back_update(): void {}
 
     next(): boolean {
         if (this.current_step >= this.steps.length){
@@ -23,7 +32,7 @@ export class Dynamic {
             return false;
         }
 
-        this.send_front_update(this.steps[this.current_step]);
+        this.send_front_update();
 
         this.current_step++;
         return true;
@@ -39,7 +48,7 @@ export class Dynamic {
             return false;
         }
         
-        this.send_back_update(this.steps[this.current_step]);
+        this.send_back_update();
 
         this.current_step--;
         return true;
@@ -72,11 +81,11 @@ export class DynamicSection extends Dynamic{
         this.message = message;
     }
 
-    send_front_update(update: Update): void{
+    send_front_update(): void{
         this.canvas.update(this.steps[this.current_step + 1].front);
         this.message.update(this.steps[this.current_step + 1].message);
     }
-    send_back_update(update: Update): void{
+    send_back_update(): void{
         let to_send = this.current_step < this.steps.length ? this.steps[this.current_step].back : [];
         to_send = to_send.concat(this.steps[this.current_step - 1].front);
         this.canvas.update(to_send);
@@ -99,7 +108,7 @@ export class DynamicSection extends Dynamic{
 export class DynamicMenu implements DomElement {
     container: HTMLDivElement;
 
-    bind: Dynamic;
+    bind: IDynamic;
 
     next: HTMLButtonElement;
     prev: HTMLButtonElement;

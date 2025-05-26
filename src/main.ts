@@ -10,6 +10,6 @@ const r = new RSection("BBBBBBBBBB", false);
 display.appendChild(d.container);
 display.appendChild(r.container);
 
-const alg = new PMAlg();
+const alg = new PMAlg("ABBABAABACCABABACBACBABBACBABACABACABABBACABACABACC", "ABACABACABA", "Boyer Moore", "something not yet helpfull");
 const sw = new SWSection(alg, "ABBABAABACCABABACBACBABBACBABACABACABABBACABACABACC", "ABACABACABA", 1);
 display.appendChild(sw.container);

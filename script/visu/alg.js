@@ -86,12 +86,82 @@ export class AlgSection {
             append_to(this, c);
     }
 }
-export class PMAlg extends Dynamic {
-    title = "testt";
-    help = "testh";
-    counter;
+export class Alg extends Dynamic {
+    container;
+    steps = [];
+    sections = [];
     constructor() {
         super();
+        this.container = document.createElement('div');
+        this.container.classList.add('alg-container');
+    }
+    send_front_update() {
+        for (let sec of this.sections) {
+            const section = this[sec];
+            if (!section.dynamic.is_done()) {
+                section.dynamic.skip();
+            }
+            section.content.update(this.steps[this.current_step + 1].get(sec).front);
+            section.message.update(this.steps[this.current_step + 1].get(sec).message);
+        }
+    }
+    send_back_update() {
+        for (let sec of this.sections) {
+            const section = this[sec];
+            if (!section.dynamic.is_done()) {
+                section.dynamic.skip();
+            }
+            let to_send = this.current_step < this.steps.length ? this.steps[this.current_step].get(sec).back : [];
+            to_send = to_send.concat(this.steps[this.current_step - 1].get(sec).front);
+            section.content.update(to_send);
+            section.message.update(this.steps[this.current_step - 1].get(sec).message);
+        }
+    }
+    skip() {
+        for (let sec of this.sections) {
+            const section = this[sec];
+            section.dynamic.skip();
+        }
+    }
+    reset() {
+        for (let sec of this.sections) {
+            const section = this[sec];
+            section.dynamic.reset();
+        }
+    }
+}
+export class PMAlg extends Alg {
+    title;
+    help;
+    text;
+    pattern;
+    occurences = new Map(); // occurences found at a given step
+    counts = [];
+    counter;
+    constructor(text, pattern, title, help) {
+        super();
+        this.container.classList.add("pm-alg-container");
+        this.sections.push("counter");
+        this.text = text;
+        this.pattern = pattern;
+        this.title = title;
+        this.help = help;
         this.counter = new Counter(0);
+    }
+    send_front_update() {
+        super.send_front_update();
+        this.counter.update(this.counts[this.current_step]);
+        // TODO 
+        if (this.occurences.has(this.current_step)) {
+            console.log(`found new ${this.occurences.get(this.current_step)}`);
+        }
+    }
+    send_back_update() {
+        super.send_back_update();
+        this.counter.update(this.counts[this.current_step]);
+        // TODO 
+        if (this.occurences.has(this.current_step)) {
+            console.log(`found new ${this.occurences.get(this.current_step)}`);
+        }
     }
 }

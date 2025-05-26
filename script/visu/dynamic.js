@@ -4,8 +4,8 @@ import { Graphic } from "../graphics.js";
 export class Dynamic {
     current_step = -1;
     steps = [];
-    send_front_update(update) { }
-    send_back_update(update) { }
+    send_front_update() { }
+    send_back_update() { }
     next() {
         if (this.current_step >= this.steps.length) {
             return false;
@@ -14,7 +14,7 @@ export class Dynamic {
             this.skip();
             return false;
         }
-        this.send_front_update(this.steps[this.current_step]);
+        this.send_front_update();
         this.current_step++;
         return true;
     }
@@ -26,7 +26,7 @@ export class Dynamic {
             this.reset();
             return false;
         }
-        this.send_back_update(this.steps[this.current_step]);
+        this.send_back_update();
         this.current_step--;
         return true;
     }
@@ -51,11 +51,11 @@ export class DynamicSection extends Dynamic {
         this.canvas = canvas;
         this.message = message;
     }
-    send_front_update(update) {
+    send_front_update() {
         this.canvas.update(this.steps[this.current_step + 1].front);
         this.message.update(this.steps[this.current_step + 1].message);
     }
-    send_back_update(update) {
+    send_back_update() {
         let to_send = this.current_step < this.steps.length ? this.steps[this.current_step].back : [];
         to_send = to_send.concat(this.steps[this.current_step - 1].front);
         this.canvas.update(to_send);

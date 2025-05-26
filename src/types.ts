@@ -36,6 +36,14 @@ export class methodCall {
     }
 }
 
+export class algMethodCall extends methodCall {
+    section: string;
+    constructor(sec: string, obj: string, method: string, args: any[]){
+        super(obj, method, args);
+        this.section = sec;
+    }
+}
+
 export class Update {
     front: methodCall[];
     back: methodCall[];
@@ -47,8 +55,6 @@ export class Update {
         this.message = message? message: "";
     }
 }
-
-export type AlgUpdate = Map<string, Update>;
 
 export type alg_result<T> = {
     data: T,

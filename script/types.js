@@ -9,6 +9,13 @@ export class methodCall {
         this.args = args;
     }
 }
+export class algMethodCall extends methodCall {
+    section;
+    constructor(sec, obj, method, args) {
+        super(obj, method, args);
+        this.section = sec;
+    }
+}
 export class Update {
     front;
     back;
