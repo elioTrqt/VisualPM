@@ -1,323 +1,412 @@
 // @ts-ignore
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+import { DomElement } from "./types";
 
 export type D3selec<T extends SVGGraphicsElement> = d3.Selection<T, unknown, null | HTMLElement, undefined>;
 
 export class Vector {
-    x: number;
-    y: number;
+	x: number;
+	y: number;
 
-    constructor(x: number, y: number) {
-        this.x = x;
-        this.y = y;
-    }
+	constructor(x: number, y: number) {
+		this.x = x;
+		this.y = y;
+	}
 
-    add(other: Vector): Vector {
-        return new Vector(this.x + other.x, this.y + other.y);
-    }
-    sub(other: Vector): Vector {
-        return new Vector(this.x - other.x, this.y - other.y);
-    }
+	add(other: Vector): Vector {
+		return new Vector(this.x + other.x, this.y + other.y);
+	}
+	sub(other: Vector): Vector {
+		return new Vector(this.x - other.x, this.y - other.y);
+	}
 
-    len(): number {
-        return Math.sqrt(Math.pow(this.x, 2) + Math.pow(this.x, 2));
-    }
+	len(): number {
+		return Math.sqrt(Math.pow(this.x, 2) + Math.pow(this.x, 2));
+	}
 };
 
+export class Canvas implements DomElement {
+	readonly container: HTMLElement;
+	readonly svg: D3selec<SVGElement>;
+	readonly group: D3selec<SVGGElement>;
+
+	constructor(size: Vector) {
+		this.container = document.createElement('div');
+		this.container.classList.add("canvas-container");
+
+		this.svg = d3.select(this.container)
+			.append('svg')
+			.att('width', size.x)
+			.att('height', size.y);
+
+		this.group = this.svg.append('g');
+	};
+
+	append_text(text: string, x: number, y: number, baseline: string, anchor: string, fontsize: number = 20): void {
+		this.group.append('text')
+			.attr('x', x)
+			.attr('y', y)
+			.attr("font-size", `${fontsize}px`)
+			.attr('text-anchor', anchor)
+			.attr('dominant-baseline', baseline)
+			.text(text);
+	}
+
+	clear(): void {
+		this.group.selectAll("*").remove();
+	}
+}
+
 export class Graphic {
-    readonly group: D3selec<SVGGElement>;     // Root
-    readonly pos: Vector;   // initial postion
-    trans: Vector;          // translation
-    speed: number;
+	readonly group: D3selec<SVGGElement>;     // Root
+	readonly pos: Vector;   // initial postion
+	trans: Vector;          // translation
+	speed: number;
 
-    constructor(parent: D3selec<SVGGraphicsElement>, pos: Vector, anim_speed: number){
-        this.pos = pos;
-        this.trans = new Vector(0, 0);
-        this.group = parent.append("g");
-        this.speed = anim_speed;
-    }
+	constructor(parent: D3selec<SVGGElement>, pos: Vector, anim_speed: number) {
+		this.pos = pos;
+		this.trans = new Vector(0, 0);
+		this.group = parent.append("g");
+		this.speed = anim_speed;
+	}
 
-    get_pos(): Vector {
-        return this.pos.add(this.trans);
-    }
+	// return current position, including translation
+	get_pos(): Vector {
+		return this.pos.add(this.trans);
+	}
 
-    set_pos(dest: Vector, anim?: number): void {
-        let t : Vector = dest.sub(this.get_pos());
-        this.translate(t, anim?anim:this.speed);
-    }
+	// move to a given position (actually compute translate and apply translate())
+	set_pos(dest: Vector, anim?: number): void {
+		let t: Vector = dest.sub(this.get_pos());
+		this.translate(t, anim ? anim : this.speed);
+	}
 
-    reset_pos(): void {
-        this.set_pos(this.pos);
-    }
+	// move the group in the direction of <t>
+	translate(t: Vector, anim?: number): void {
+		this.trans = this.trans.add(t);
+		this.group.transition()
+			.duration(anim ? anim : this.speed * t.len())
+			.attr("transform", `translate(${this.trans.x}, ${this.trans.y})`);
+	}
 
-    translate(t: Vector, anim?: number): void {
-        this.trans = this.trans.add(t);
-        this.group.transition()
-            .duration(anim?anim:this.speed * t.len())
-            .attr("transform", `translate(${this.trans.x}, ${this.trans.y})`);
-    }
+	// move back to the original position
+	reset_pos(): void {
+		this.set_pos(this.pos);
+	}
 
-    display(state: boolean): void {
-        this.group.style("display", state ? null : "none");
-    }
+	// show / hide the group
+	set_display(state: boolean): void {
+		this.group.style("display", state ? null : "none");
+	}
 
-    clear(): void {
-        this.group.selectAll("*").remove();
-    }
+	// change animation speed
+	set_speed(s: number) {
+		this.speed = s;
+	}
 
-    remove(): void {
-        this.group.remove();
-    }
+	// remove the content of the group element
+	clear(): void {
+		this.group.selectAll("*").remove();
+	}
 
-    set_speed(s: number){
-        this.speed = s;
-    }
+	// remove the group element from the dom
+	remove(): void {
+		this.group.remove();
+	}
 }
 
 
-export class GraphicList extends Graphic {
-    values: Array<string | number | null>;
-    cell_width: number;
+export class GraphicList<T> extends Graphic {
+	data: Array<T | null>;
+	cell_width: number;
 
-    constructor(parent: D3selec<SVGGraphicsElement>, pos: Vector, anim_speed: number, w: number, vals: Array<string | number> | number = 0){
-        super(parent, pos, anim_speed);
-        this.cell_width = w;
+	constructor(parent: D3selec<SVGGElement>, pos: Vector, w: number, vals: Array<T | null>, anim_speed: number) {
+		super(parent, pos, anim_speed);
+		this.cell_width = w;
+		this.data = vals;
+		this.draw();
+	};
 
-        if (typeof vals !== "number"){
-            this.values = vals;
-        } else {
-            this.values = new Array(vals).fill(null);
-        }
+	draw(): void {
+		this.clear();
+		let cur_x = this.pos.x;
+		for (let i = 0; i < this.data.length; i++) {
+			this.group.append('rect')
+				.attr('x', cur_x)
+				.attr('y', this.pos.y)
+				.attr('width', this.cell_width)
+				.attr('height', this.cell_width)
+				.attr('fill', 'white')
+				.attr('stroke', 'black')
+				.attr('id', `cell_${i}`);
 
-        this.draw();
-    };
+			this.group.append("text")
+				.attr("x", cur_x + 24)
+				.attr("y", this.pos.y + 27.5)
+				.attr("text-anchor", "middle")
+				.attr("dominant-baseline", "middle")
+				.attr("fill", "black")
+				.attr("font-size", "25px")
+				.text(this.data[i] ? `${this.data[i]}` : '')
+				.attr('id', `text_${i}`);
 
-    draw() : void {
-        this.clear();
-        let cur_x = this.pos.x;
-        for (let i=0; i < this.values.length; i++){
-            this.group.append('rect')
-                .attr('x', cur_x)
-                .attr('y', this.pos.y)
-                .attr('width', this.cell_width) 
-                .attr('height', this.cell_width)
-                .attr('fill', 'white')
-                .attr('stroke', 'black')
-                .attr('id', `cell_${i}`);
+			cur_x += this.cell_width;
+		}
+	}
 
-            this.group.append("text")
-                .attr("x", cur_x + 24)
-                .attr("y", this.pos.y + 27.5)
-                .attr("text-anchor", "middle")
-                .attr("dominant-baseline", "middle") 
-                .attr("fill", "black") 
-                .attr("font-size", "25px")
-                .text(this.values[i]===null?'':`${this.values[i]}`)
-                .attr('id', `text_${i}`);
-            
-            cur_x += this.cell_width;
-        }
-    }
+	// ACCESS CONTENT
 
-    get(i: number, off: number = 1) : string | number | null{
-        return this.values[i-off];
-    }
+	get(index: number, off: number = 1): T | null | undefined {
+		if (index - off < this.data.length) {
+			return this.data[index - off];
+		}
+		console.log("WARNING: a value outside of graphicList range is being accessed");
+		return undefined;
+	}
 
-    set_value(i: number, val: string | number | null, off: number = 1) : void {
-        if (i - off  < this.values.length){
-            this.values[i-off] = val;
-            this.group.select(`#text_${i-off}`).text(val===null?'':`${val}`);
-        }
-    }
+	get_data(): Array<T | null> {
+		return this.data;
+	}
 
-    set_values(val: Array<string | number | null>): void {
-        this.values = val;
-        this.draw();
-    }
+	// MODIFY CONTENT
 
-    append(val: string | number | null): void {
-        this.values.push(val);
-        this.draw();
-    }
+	set(index: number, val: T | null, off: number = 1): void {
+		if (index - off < this.data.length) {
+			this.data[index - off] = val;
+			this.group.select(`#text_${index - off}`).text(`${val}`);
+		} else {
+			console.log("WARNING: a value outside of graphicList range is being set");
+		}
+	}
 
-    pop(): void {
-        this.values.pop();
-        this.draw();
-    }
+	set_data(val: Array<T | null>): void {
+		this.data = val;
+		this.draw();
+	}
 
-    fill_values(val: string | number | null): void {
-        this.set_values(new Array(this.values.length).fill(val));
-    }
+	fill_data_with(val: T | null, size?: number): void {
+		this.set_data(new Array(size ? size : this.data.length).fill(val));
+	}
 
-    set_color(i: number, val: string, off: number = 1): void {
-        if (i - off < this.values.length){
-            this.group.select(`#cell_${i-off}`).attr('fill', val);
-        }
-    }
+	append(val: T | null): void {
+		this.data.push(val);
+		this.draw();
+	}
 
-    set_colors(cols: Array<string>): void {
-        for (let i=0; i < cols.length; i++){
-            this.set_color(i, cols[i]);
-        }
-    }
+	pop(index: number, off: number = 1): void {
+		if (index - off < this.data.length) {
+			this.data.splice(index - off, 1);
+			this.draw();
+		} else {
+			console.log("WARNING: a value outside of graphicList range is being removed");
+		}
+	}
 
-    fill_color(val: string): void {
-        for (let i = 0; i < this.values.length; i++){
-            this.set_color(i, val, 0);
-        }
-    }
+	// COLORS
 
-    shift(d: number, anim?: number): void {
-        this.translate(new Vector(d*this.cell_width, 0), anim?anim:this.speed);
-    }
+	set_color(index: number, col: string, off: number = 1): void {
+		if (index - off < this.data.length) {
+			this.group.select(`#cell_${index - off}`).attr('fill', col);
+		} else {
+			console.log("WARNING: a color outside of graphicList range is being modified");
+		}
+	}
 
-    set_shift(d: number, anim?: number): void {
-        this.set_pos(this.pos.add(new Vector(d*this.cell_width, 0)), anim?anim:this.speed);
-    }
+	set_data_color(cols: string[]): void {
+		for (let i = 0; i < cols.length; i++) {
+			this.set_color(i, cols[i]);
+		}
+	}
 
-    /*
-    h and v are horizontal and vertical offset, by default middle of the cell is given
-    h = 1 mean right, h= -1 mean left, and v= 1 or -1 mean bot and top respectively
-    0 mean center for h or v
-    */
-    get_cell_pos(i: number, h: number, v: number, offset: number = 1): Vector {
-        const center = this.pos.add(new Vector((i-offset+0.5)*this.cell_width, 0.5*this.cell_width));
-        return center.add(new Vector(0.5*h*this.cell_width, 0.5*v*this.cell_width));
-    }
+	fill_data_color_with(col: string): void {
+		for (let i = 0; i < this.data.length; i++) {
+			this.set_color(i, col, 0);
+		}
+	}
+
+	// MOVEMENT
+
+	shift(d: number, anim?: number): void {
+		this.translate(new Vector(d * this.cell_width, 0), anim ? anim : this.speed);
+	}
+
+	set_shift(d: number, anim?: number): void {
+		this.set_pos(this.pos.add(new Vector(d * this.cell_width, 0)), anim ? anim : this.speed);
+	}
+
+	// ABSOLUTE CELL POSITION (for placing arrows)
+
+	get_cell_pos(i: number, h_align: string, v_align: string, off: number = 1): Vector | null {
+		const cell = i - off;
+
+		if (cell < 0 || cell >= this.data.length) {
+			console.log("WARNING: a cell position outside of range is accessed");
+			return null;
+		}
+
+		let h_off: number, v_off: number;
+		switch (h_align) {
+			case "left": h_off = 0; break;
+			case "middle": h_off = 0.5; break;
+			case "right": h_off = 1; break;
+			default:
+				console.log(`WARNING: value ${h_align} is not allowed use 'left', 'middle' or 'right' (defaulting to 'middle')`);
+				h_off = 0.5;
+				break;
+		}
+		switch (v_align) {
+			case "top": v_off = 0; break;
+			case "middle": v_off = 0.5; break;
+			case "bot": v_off = 1; break;
+			default:
+				console.log(`WARNING: value ${v_align} is not allowed use 'top', 'middle' or 'bot' (defaulting to 'middle')`);
+				v_off = 0.5;
+				break;
+		}
+
+		return this.pos.add(new Vector((cell + h_off) * this.cell_width, v_off * this.cell_width));
+	}
 }
 
-export class GraphicDict extends Graphic {
-    content: Map<string, GraphicList>;
+export class GraphicDict<S, T> extends Graphic {
+	data: Map<S, GraphicList<S | T>>;
 
-    constructor(parent: D3selec<SVGGraphicsElement>, pos: Vector, w: number, pattern: string){
-        super(parent, pos, 0);
-        this.content = new Map<string, GraphicList>();
+	constructor(parent: D3selec<SVGGElement>, pos: Vector, w: number, sigma: S[]) {
+		super(parent, pos, 0);
+		this.data = new Map<S, GraphicList<S | T>>();
 
-        const sigma = [...new Set(pattern)].sort();
-        sigma.push('...');
-        
-        let offset_pos = pos;
-        for (let c of sigma){
-            this.content.set(c, new GraphicList(this.group, offset_pos, 0, w, [c, ""]));
-            offset_pos = offset_pos.add(new Vector(0, w));
-        }
-    }
+		let offset_pos = pos;
+		for (let s of sigma) {
+			this.data.set(s, new GraphicList<S | T>(this.group, offset_pos, w, [s, null], 0));
+			offset_pos = offset_pos.add(new Vector(0, w));
+		}
+	}
 
-    set_value(c: string, i: number, v: number | string | null): void {
-        this.content.get(c)!.set_value(i, v, 0);
-    }
+	// set the value of an existing cell 
+	set(c: S, index: number, v: T | null): void {
+		this.data.get(c)!.set(index, v, 0);
+	}
 
-    set_values(c: string, vals: Array<number | string | null>): void {
-        const total_values: Array<string | number | null> = [c];
-        this.content.get(c)!.set_values(total_values.concat(vals));
-    }
+	// set the values of an existing row 
+	set_row(c: S, vals: Array<T | null>): void {
+		const total_values: Array<S | T | null> = [c];
+		this.data.get(c)!.set_data(total_values.concat(vals));
+	}
 
-    set_color(c: string, i: number, v: string): void {
-        this.content.get(c)!.set_color(i, v, 0);
-    }
+	// set the values for the whole dict (rows must exist)
+	set_data(map: Map<S, Array<T | null>>): void {
+		for (let c of map.keys()) {
+			this.set_row(c, map.get(c)!);
+		}
+	}
 
-    fill_color(v: string): void {
-        for (let c of this.content.keys()){
-            this.content.get(c)!.fill_color(v);
-        }
-    }
+	// set each existing row with default values
+	fill_data_with(vals: Array<T | null>): void {
+		for (let c of this.data.keys()) {
+			this.set_row(c, vals);
+		}
+	}
 
-    append(c: string, v: number | string | null): void {
-        this.content.get(c)!.append(v);
-    }
+	// change the color of a given cell
+	set_color(c: S, index: number, col: string): void {
+		this.data.get(c)!.set_color(index, col, 0);
+	}
 
-    pop(c: string): void {
-        this.content.get(c)!.pop();
-    }
+	// fill every row with the same color
+	fill_data_color_with(col: string): void {
+		for (let c of this.data.keys()) {
+			this.data.get(c)!.fill_data_color_with(col);
+		}
+	}
 
-    fill(map: Map<string, Array<number>>): void {
-        for (let c of map.keys()){
-            let data: Array<string | number> = [c];
-            data = data.concat(map.get(c)!)
-            this.content.get(c)!.set_values(data);
-        }
-        this.content.get('...')!.set_values(['...', 0]);
-    }
+	// append a cell to the end of an existing row
+	append_to_row(c: S, v: T | null): void {
+		this.data.get(c)!.append(v);
+	}
 
-    empty(): void {
-        for (let c of this.content.keys()){
-            this.content.get(c)!.set_values([c, ""]);
-        }
-    }
+	// remove an existing cell
+	pop(c: S, index: number): void {
+		this.data.get(c)!.pop(index, 0);
+	}
+
+	// remove an existing cell with given value
+	pop_last(c: S): void {
+		this.pop(c, this.data.get(c)!.get_data().length - 1);
+	}
+
 }
 
 
-export class Arrow extends Graphic{
-    line: D3selec<SVGLineElement>;
-    //marker: d3.Selection<SVGMarkerElement, unknown, null, undefined>;
-    start: Vector;
-    end: Vector;
-    start_trans: Vector;
-    end_trans: Vector;
-  
-    constructor(parent: D3selec<SVGGraphicsElement>, start: Vector, end: Vector, anim_speed: number, color: string) {
-        super(parent, start, anim_speed);
-        this.start = start;
-        this.end = end;
-        this.start_trans = new Vector(0, 0);
-        this.end_trans = new Vector(0, 0);
-        
-        // Define the marker for the arrowhead
-        this.group
-            .append("defs")
-            .append("marker")
-            .attr("id", "arrowhead")
-            .attr("viewBox", "0 0 10 10")
-            .attr("refX", 8)
-            .attr("refY", 5)
-            .attr("markerWidth", 6)
-            .attr("markerHeight", 6)
-            .attr("orient", "auto-start-reverse")
-            .append("path")
-            .attr("d", "M 0 0 L 10 5 L 0 10 z")
-            .attr("fill", color)
-            .attr("stroke", color);
-    
-        // Create the line representing the arrow
-        this.line = this.group
-            .append("line")
-            .attr("stroke", color)
-            .attr("stroke-width", 2)
-            .attr("x1", this.start.x)
-            .attr("x2", this.end.x)
-            .attr("y1", this.start.y)
-            .attr("y2", this.end.y)
-            .attr("marker-end", "url(#arrowhead)");
-    }
+export class Arrow extends Graphic {
+	line: D3selec<SVGLineElement>;
+	start: Vector;
+	end: Vector;
+	start_trans: Vector;
+	end_trans: Vector;
 
-    translate_start(t: Vector, anim?: number): void {
-        this.start = this.start.add(t);
-        this.update(anim?anim:this.speed * t.len());
-    }
+	constructor(parent: D3selec<SVGGElement>, start: Vector, end: Vector, anim_speed: number, color: string) {
+		super(parent, start, anim_speed);
+		this.start = start;
+		this.end = end;
+		this.start_trans = new Vector(0, 0);
+		this.end_trans = new Vector(0, 0);
 
-    translate_end(t: Vector, anim?: number): void {
-        this.end = this.end.add(t);
-        this.update(anim?anim:this.speed * t.len());
-    }
-;
-    set_start(t: Vector, anim?: number): void {
-        const duration = anim?anim:this.speed * this.start.sub(t).len();
-        this.start = t;
-        this.update(duration);
-    }
+		// Define the marker for the arrowhead
+		this.group
+			.append("defs")
+			.append("marker")
+			.attr("id", "arrowhead")
+			.attr("viewBox", "0 0 10 10")
+			.attr("refX", 8)
+			.attr("refY", 5)
+			.attr("markerWidth", 6)
+			.attr("markerHeight", 6)
+			.attr("orient", "auto-start-reverse")
+			.append("path")
+			.attr("d", "M 0 0 L 10 5 L 0 10 z")
+			.attr("fill", color)
+			.attr("stroke", color);
 
-    set_end(t: Vector, anim?: number): void {
-        const duration = anim?anim:this.speed * this.end.sub(t).len();
-        this.end = t;
-        this.update(duration);
-    } 
+		// Create the line representing the arrow
+		this.line = this.group
+			.append("line")
+			.attr("stroke", color)
+			.attr("stroke-width", 2)
+			.attr("x1", this.start.x)
+			.attr("x2", this.end.x)
+			.attr("y1", this.start.y)
+			.attr("y2", this.end.y)
+			.attr("marker-end", "url(#arrowhead)");
+	}
 
-    update(duration: number): void {
-        this.line.transition()
-            .duration(duration)
-            .attr("x1", this.start.x) 
-            .attr("y1", this.start.y)
-            .attr("x2", this.end.x) 
-            .attr("y2", this.end.y);
-    }
+	translate_start(t: Vector, anim?: number): void {
+		this.start = this.start.add(t);
+		this.update(anim ? anim : this.speed * t.len());
+	}
+
+	translate_end(t: Vector, anim?: number): void {
+		this.end = this.end.add(t);
+		this.update(anim ? anim : this.speed * t.len());
+	}
+	;
+	set_start(t: Vector, anim?: number): void {
+		const duration = anim ? anim : this.speed * this.start.sub(t).len();
+		this.start = t;
+		this.update(duration);
+	}
+
+	set_end(t: Vector, anim?: number): void {
+		const duration = anim ? anim : this.speed * this.end.sub(t).len();
+		this.end = t;
+		this.update(duration);
+	}
+
+	update(duration: number): void {
+		this.line.transition()
+			.duration(duration)
+			.attr("x1", this.start.x)
+			.attr("y1", this.start.y)
+			.attr("x2", this.end.x)
+			.attr("y2", this.end.y);
+	}
 }
