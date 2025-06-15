@@ -1,6 +1,7 @@
+import { AlgSection } from "../sections.js";
+import { IUpdatable } from "../../types.js";
 import { Canvas, GraphicDict, GraphicList, Vector } from "../../graphics.js";
 import { init_right } from "../../algs/bm.js";
-import { AlgSection, IUpdatable } from "../dynamic.js";
 
 
 export class dictRowUpdate {
@@ -65,12 +66,23 @@ class RTable extends Canvas implements IUpdatable {
 		}
 	}
 
-	reverse_update(state: RTableState): void {
-		this.clear_color();
-
+	reverse_update(state: RTableState, prev_state?: RTableState): void {
 		for (let row of state.rows) {
 			for (let u of row.update) this.table.set(row.id, u.pos, u.prev);
-			for (let v of row.append) this.table.pop_last(row.id);
+			for (let _ of row.append) this.table.pop_last(row.id);
+		}
+		this.clear_color();
+
+		if (!prev_state) return;
+
+		for (let c of prev_state.index_color) {
+			this.index.set_color(c[0], c[1]);
+		}
+		for (let c of prev_state.pattern_color) {
+			this.pattern.set_color(c[0], c[1]);
+		}
+		for (let row of prev_state.rows) {
+			for (let c of row.color) this.table.set_color(row.id, c[0], c[1]);
 		}
 	}
 
@@ -118,7 +130,7 @@ class RTable extends Canvas implements IUpdatable {
 export class RSection extends AlgSection {
 	constructor(pattern: string, improved: boolean) {
 		const right = init_right(pattern, improved);
-		const rtable = new RTable(pattern, improved, 50, right.data);
+		const rtable = new RTable(pattern, improved, 50, right.values);
 		super("Table R (mauvais caractère) :", "some help", rtable, right.steps);
 	}
 }

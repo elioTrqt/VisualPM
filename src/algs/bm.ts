@@ -132,7 +132,7 @@ export function init_decal(pattern: string, suff: number[]): suff_result {
             Alors le décalage est donné par D[${i}] = m - j = ${updated[i]} qui correspond au décalage qui permet de décaler u' "à la place de" u.`;
 
 			state.decal.color.push([i, 'green']);
-			state.suff.color.push([i, 'green']);
+			state.suff.color.push([j, 'green']);
 			for (let k = j; k > j - suff[j]; k--)
 				state.pattern_color.push([k, 'green']);
 

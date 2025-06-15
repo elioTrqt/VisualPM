@@ -1,6 +1,7 @@
+import { AlgSection } from "../sections.js";
+import { IUpdatable } from "../../types.js";
 import { Canvas, GraphicList, Vector } from "../../graphics.js";
 import { init_decal, init_suff } from "../../algs/bm.js";
-import { AlgSection, IUpdatable } from "../dynamic.js";
 
 export class listUpdate {
 	color: Array<[number, string]> = [];
@@ -70,7 +71,7 @@ class DTable extends Canvas implements IUpdatable {
 	}
 
 	// reverse the effect added by <state>, but do not restore color (only clear)
-	reverse_update(state: DTableState): void {
+	reverse_update(state: DTableState, prev_state?: DTableState): void {
 		for (let u of state.suff.update) {
 			this.suff.set(u.pos, u.prev);
 		}
@@ -78,10 +79,27 @@ class DTable extends Canvas implements IUpdatable {
 			this.decal.set(u.pos, u.prev);
 		}
 		this.clear_color();
+
+		if (!prev_state) return;
+
+		for (let c of prev_state.index_color) {
+			this.index.set_color(c[0], c[1]);
+		}
+		for (let c of prev_state.pattern_color) {
+			this.pattern.set_color(c[0], c[1]);
+		}
+		for (let c of prev_state.suff.color) {
+			this.suff.set_color(c[0], c[1]);
+		}
+		for (let c of prev_state.decal.color) {
+			this.decal.set_color(c[0], c[1]);
+		}
 	}
 
 	skip(): void {
 		console.log("INFO: skipping d table");
+		console.log(this.suff_vals);
+		console.log(this.decal_vals);
 		this.clear_color();
 		this.suff.set_data(this.suff_vals);
 		this.decal.set_data(this.decal_vals);

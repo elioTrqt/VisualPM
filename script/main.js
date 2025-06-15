@@ -1,11 +1,9 @@
-import { DSection, RSection } from "./visu/bm.js";
-import { SWSection } from "./visu/sliding_window.js";
-import { PMAlg } from "./visu/alg.js";
+import { DSection } from "./visu/bm/decal.js";
 const display = document.getElementById("display");
+// const r = new RSection("ABACABACABA", false);
+// display.appendChild(r.container);
 const d = new DSection("ABACABACABA");
-const r = new RSection("BBBBBBBBBB", false);
 display.appendChild(d.container);
-display.appendChild(r.container);
-const alg = new PMAlg("ABBABAABACCABABACBACBABBACBABACABACABABBACABACABACC", "ABACABACABA", "Boyer Moore", "something not yet helpfull");
-const sw = new SWSection(alg, "ABBABAABACCABABACBACBABBACBABACABACABABBACABACABACC", "ABACABACABA", 1);
-display.appendChild(sw.container);
+// const alg = new PMAlg("ABBABAABACCABABACBACBABBACBABACABACABABBACABACABACC", "ABACABACABA", "Boyer Moore", "something not yet helpfull");
+// const sw = new SWSection(alg, "ABBABAABACCABABACBACBABBACBABACABACABABBACABACABACC", "ABACABACABA", 1);
+// display.appendChild(sw.container);

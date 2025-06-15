@@ -1,6 +1,6 @@
 // @ts-ignore
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
-import { DomElement } from "./types";
+import { DomElement } from "./types.js";
 
 export type D3selec<T extends SVGGraphicsElement> = d3.Selection<T, unknown, null | HTMLElement, undefined>;
 
@@ -36,8 +36,8 @@ export class Canvas implements DomElement {
 
 		this.svg = d3.select(this.container)
 			.append('svg')
-			.att('width', size.x)
-			.att('height', size.y);
+			.attr('width', size.x)
+			.attr('height', size.y);
 
 		this.group = this.svg.append('g');
 	};
@@ -147,7 +147,7 @@ export class GraphicList<T> extends Graphic {
 				.attr("dominant-baseline", "middle")
 				.attr("fill", "black")
 				.attr("font-size", "25px")
-				.text(this.data[i] ? `${this.data[i]}` : '')
+				.text(this.data[i] !== null ? `${this.data[i]}` : ``)
 				.attr('id', `text_${i}`);
 
 			cur_x += this.cell_width;
@@ -173,7 +173,7 @@ export class GraphicList<T> extends Graphic {
 	set(index: number, val: T | null, off: number = 1): void {
 		if (index - off < this.data.length) {
 			this.data[index - off] = val;
-			this.group.select(`#text_${index - off}`).text(`${val}`);
+			this.group.select(`#text_${index - off}`).text(val !== null ? `${val}` : ``);
 		} else {
 			console.log("WARNING: a value outside of graphicList range is being set");
 		}
@@ -277,7 +277,7 @@ export class GraphicDict<S, T> extends Graphic {
 
 		let offset_pos = pos;
 		for (let s of sigma) {
-			this.data.set(s, new GraphicList<S | T>(this.group, offset_pos, w, [s, null], 0));
+			this.data.set(s, new GraphicList<S | T>(this.group, offset_pos, w, [s], 0));
 			offset_pos = offset_pos.add(new Vector(0, w));
 		}
 	}
