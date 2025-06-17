@@ -388,7 +388,7 @@ export class Arrow extends Graphic {
 		this.end = this.end.add(t);
 		this.update(anim ? anim : this.speed * t.len());
 	}
-	;
+
 	set_start(t: Vector, anim?: number): void {
 		const duration = anim ? anim : this.speed * this.start.sub(t).len();
 		this.start = t;
@@ -399,6 +399,10 @@ export class Arrow extends Graphic {
 		const duration = anim ? anim : this.speed * this.end.sub(t).len();
 		this.end = t;
 		this.update(duration);
+	}
+
+	set_color(c: string) {
+		this.line.attr("stroke", c);
 	}
 
 	update(duration: number): void {
