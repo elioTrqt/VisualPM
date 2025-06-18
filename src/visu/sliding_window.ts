@@ -1,5 +1,6 @@
 import { IUpdatable } from "../types.js";
 import { Canvas, GraphicList, Vector, Arrow } from "../graphics.js";
+import { AlgSection } from "./sections.js";
 
 export class patternUpdate {
 	color: Array<[number, string]> = [];
@@ -116,14 +117,9 @@ export class SlidingWindow extends Canvas implements IUpdatable {
 		}
 	}
 
-	skip(): void {
-		// TODO: Refactor BM so that only the section have to handle skip() and reset()
-		console.log("skip sliding window not implemented");
-	}
-
 	reset(): void {
-		// TODO: Refactor BM so that only the section have to handle skip() and reset()
-		console.log("reset sliding window not implementd: to be refactored");
+		this.pattern.reset_pos();
+		this.clear_color();
 	}
 
 	clear_color(): void {
@@ -138,3 +134,20 @@ export class SlidingWindow extends Canvas implements IUpdatable {
 	}
 };
 
+
+export class SWSection extends AlgSection {
+	skip_update: SWSectionState;
+
+	constructor(text: string, pattern: string, title: string, help: string, skip_update: SWSectionState) {
+		const swtable = new SlidingWindow(text, pattern, 50, 1);
+		super(title, help, swtable, []);
+
+		this.skip_update = skip_update;
+	}
+
+	skip(): void {
+		this.data.reset();
+		this.update(this.skip_update);
+		super.skip();
+	}
+}

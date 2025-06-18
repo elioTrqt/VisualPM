@@ -36,23 +36,20 @@ export class AlgSection implements IDynamic, IUpdatable, DomElement {
 	}
 
 	update(step: AlgStep) {
-		if (!this.is_done()) this.skip();
 		this.data.update(step.data);
 		this.message.update(step.message);
 	}
 
-	reverse_update(state: any): void {
-		if (!this.is_done()) this.skip();
-		this.data.reverse_update(state.data);
-		this.message.update("");
+	reverse_update(step: AlgStep, prev_step?: AlgStep): void {
+		this.data.reverse_update(step.data, prev_step?.data);
+		this.message.update(prev_step ? prev_step.message : "");
 	}
 
 	next(): boolean {
 		if (this.current_step >= this.steps.length) {
 			return false;
 		}
-		this.data.update(this.steps[this.current_step].data);
-		this.message.update(this.steps[this.current_step].message);
+		this.update(this.steps[this.current_step]);
 		this.current_step++;
 		return this.current_step < this.steps.length;
 	}
@@ -62,19 +59,11 @@ export class AlgSection implements IDynamic, IUpdatable, DomElement {
 			return false;
 		}
 		this.current_step--;
-		if (this.current_step > 0) {
-			this.data.reverse_update(this.steps[this.current_step].data, this.steps[this.current_step - 1].data);
-			this.message.update(this.steps[this.current_step - 1].message);
-		} else {
-			this.data.reverse_update(this.steps[this.current_step].data);
-			this.message.update("");
-		}
+		this.reverse_update(this.steps[this.current_step], this.steps[this.current_step - 1]);
 		return this.current_step > 0;
 	}
 
 	skip(): void {
-		this.data.skip();
-		this.message.update("");
 		this.current_step = this.steps.length;
 	}
 

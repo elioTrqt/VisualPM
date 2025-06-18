@@ -86,11 +86,6 @@ class RTable extends Canvas implements IUpdatable {
 		}
 	}
 
-	skip(): void {
-		this.clear_color();
-		this.table.set_data(this.right_vals);
-	}
-
 	reset(): void {
 		this.clear_color();
 		this.table.fill_data_with([]);
@@ -128,9 +123,23 @@ class RTable extends Canvas implements IUpdatable {
 
 
 export class RSection extends AlgSection {
+	rvalues: Map<string, number[]>;
+	skip_update: RSectionState;
+
 	constructor(pattern: string, improved: boolean) {
 		const right = init_right(pattern, improved);
 		const rtable = new RTable(pattern, improved, 50, right.values);
 		super("Table R (mauvais caractère) :", "some help", rtable, right.steps);
+
+		this.rvalues = right.values;
+		this.skip_update = { message: "", data: new RTableState() };
+		for (let s of this.rvalues.keys())
+			this.skip_update.data.rows.push({ id: s, color: [], append: this.rvalues.get(s)!, update: [] });
+	}
+
+	skip(): void {
+		this.data.reset();
+		this.update(this.skip_update);
+		super.skip();
 	}
 }

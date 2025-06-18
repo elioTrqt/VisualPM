@@ -70,7 +70,6 @@ class DTable extends Canvas implements IUpdatable {
 		}
 	}
 
-	// reverse the effect added by <state>, but do not restore color (only clear)
 	reverse_update(state: DTableState, prev_state?: DTableState): void {
 		for (let u of state.suff.update) {
 			this.suff.set(u.pos, u.prev);
@@ -96,17 +95,7 @@ class DTable extends Canvas implements IUpdatable {
 		}
 	}
 
-	skip(): void {
-		console.log("INFO: skipping d table");
-		console.log(this.suff_vals);
-		console.log(this.decal_vals);
-		this.clear_color();
-		this.suff.set_data(this.suff_vals);
-		this.decal.set_data(this.decal_vals);
-	}
-
 	reset(): void {
-		console.log("INFO: reset d table");
 		this.clear_color();
 		this.suff.fill_data_with(null);
 		this.decal.fill_data_with(null);
@@ -126,10 +115,37 @@ class DTable extends Canvas implements IUpdatable {
 
 
 export class DSection extends AlgSection {
+	suffvalues: number[];
+	dvalues: number[];
+	skip_update: DSectionState;
+
 	constructor(pattern: string) {
 		const suff = init_suff(pattern);
 		const decal = init_decal(pattern, suff.values);
 		const dtable = new DTable(pattern, 50, suff.values.splice(1), decal.values.splice(1));
 		super("Tables Suff & D (bon suffixe) :", "some help", dtable, suff.steps.concat(decal.steps));
+
+		this.suffvalues = suff.values.splice(1);
+		this.dvalues = decal.values.splice(1);
+
+		this.skip_update = { message: "", data: new DTableState() };
+		const suff_updt = this.suffvalues.map((v, i) => ({
+			pos: i + 1,
+			prev: null,
+			new: v,
+		}));
+		const d_updt = this.dvalues.map((v, i) => ({
+			pos: i + 1,
+			prev: null,
+			new: v,
+		}));
+		this.skip_update.data.suff = { color: [], update: suff_updt };
+		this.skip_update.data.decal = { color: [], update: d_updt };
+	}
+
+	skip(): void {
+		this.data.reset();
+		this.update(this.skip_update);
+		super.skip();
 	}
 }

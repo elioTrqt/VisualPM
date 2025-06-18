@@ -2,7 +2,6 @@
 export interface IUpdatable {
 	update(state: any): void;
 	reverse_update(state: any, prev_state?: any): void;
-	skip(): void;
 	reset(): void;
 }
 
